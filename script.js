@@ -162,6 +162,84 @@ if (hubCarousel && window.Splide) {
     }).mount();
 }
 
+const hubTrack = document.getElementById("hubTrack");
+const hubPrev = document.getElementById("hubPrev");
+const hubNext = document.getElementById("hubNext");
+const hubDots = document.getElementById("hubDots");
+
+if (hubTrack) {
+    const hubs = Array.from(hubTrack.querySelectorAll(".hub"));
+    let currentHub = 0;
+    let dragStartX = 0;
+    let dragStartScroll = 0;
+    let dragging = false;
+
+    hubs.forEach((_, index) => {
+        const dot = document.createElement("button");
+        dot.type = "button";
+        dot.className = "hub-dot" + (index === 0 ? " active" : "");
+        dot.setAttribute("aria-label", "Go to section " + (index + 1));
+        dot.addEventListener("click", () => goToHub(index));
+        hubDots?.appendChild(dot);
+    });
+
+    function updateHub(index) {
+        currentHub = Math.max(0, Math.min(hubs.length - 1, index));
+        hubDots?.querySelectorAll(".hub-dot").forEach((dot, i) => {
+            dot.classList.toggle("active", i === currentHub);
+        });
+    }
+
+    function goToHub(index) {
+        updateHub(index);
+        hubTrack.scrollTo({ left: hubs[currentHub].offsetLeft - hubTrack.offsetLeft, behavior: "smooth" });
+    }
+
+    hubPrev?.addEventListener("click", () => goToHub(currentHub - 1));
+    hubNext?.addEventListener("click", () => goToHub(currentHub + 1));
+
+    hubTrack.addEventListener("scroll", () => {
+        const center = hubTrack.scrollLeft + hubTrack.clientWidth / 2;
+        let nearest = 0;
+        let distance = Infinity;
+        hubs.forEach((hub, i) => {
+            const hubCenter = hub.offsetLeft - hubTrack.offsetLeft + hub.offsetWidth / 2;
+            const d = Math.abs(center - hubCenter);
+            if (d < distance) { distance = d; nearest = i; }
+        });
+        updateHub(nearest);
+    }, { passive: true });
+
+    hubTrack.addEventListener("pointerdown", event => {
+        if (event.pointerType === "mouse" && event.button !== 0) return;
+        dragging = true;
+        dragStartX = event.clientX;
+        dragStartScroll = hubTrack.scrollLeft;
+        hubTrack.classList.add("is-dragging");
+        hubTrack.setPointerCapture?.(event.pointerId);
+    });
+
+    hubTrack.addEventListener("pointermove", event => {
+        if (!dragging) return;
+        hubTrack.scrollLeft = dragStartScroll - (event.clientX - dragStartX);
+    });
+
+    const endDrag = event => {
+        if (!dragging) return;
+        dragging = false;
+        hubTrack.classList.remove("is-dragging");
+        hubTrack.releasePointerCapture?.(event.pointerId);
+        const moved = event.clientX - dragStartX;
+        if (Math.abs(moved) > 45) {
+            goToHub(currentHub + (moved < 0 ? 1 : -1));
+        } else {
+            goToHub(currentHub);
+        }
+    };
+    hubTrack.addEventListener("pointerup", endDrag);
+    hubTrack.addEventListener("pointercancel", endDrag);
+}
+
 fileInput.addEventListener("change", () => {
     selectedFile = fileInput.files?.[0] || null;
     revokeDownload();
