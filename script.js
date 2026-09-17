@@ -12,6 +12,7 @@ let selectedFile = null;
 let downloadUrl = null;
 let inputName = null;
 let outputName = null;
+let fastAudioEncoderPromise = null;
 
 const VIDEO_FORMATS = new Set([
     "mp4", "webm", "mkv", "mov", "avi", "mpeg", "mpg", "ogv"
@@ -74,11 +75,23 @@ function revokeDownloadUrl() {
     }
 }
 
+function makeDownload(blob, outputFormat) {
+    downloadUrl = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = `${getBaseName(selectedFile.name)}.${outputFormat}`;
+    link.textContent = `Download ${outputFormat.toUpperCase()}`;
+    link.className = "download-button";
+    link.setAttribute("aria-label", `Download converted ${outputFormat} file`);
+    downloadArea.appendChild(link);
+}
+
 function loadScript(src) {
     return new Promise((resolve, reject) => {
         const script = document.createElement("script");
         script.src = src;
-        script.async = false;
+        script.async = true;
         script.onload = () => resolve();
         script.onerror = () => reject(new Error(`Could not load ${src}`));
         document.head.appendChild(script);
@@ -88,8 +101,6 @@ function loadScript(src) {
 async function getFFmpegConstructor() {
     if (window.FFmpegWASM?.FFmpeg) return window.FFmpegWASM.FFmpeg;
 
-    // The local copy is preferred. If a phone has an old/corrupt cached copy,
-    // fall back to the official UMD build rather than leaving the converter dead.
     try {
         await loadScript("https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/umd/ffmpeg.js?v=20260917");
     } catch (error) {
@@ -101,6 +112,113 @@ async function getFFmpegConstructor() {
         throw new Error("FFmpeg library did not load. Check your connection and refresh the page.");
     }
     return Constructor;
+}
+
+async function getFastAudioEncoder() {
+    if (!fastAudioEncoderPromise) {
+        fastAudioEncoderPromise = (async () => {
+            if (!window.WasmMediaEncoder) {
+                await loadScript("https://unpkg.com/wasm-media-encoders@0.7.0/dist/umd/WasmMediaEncoder.min.js?v=20260917");
+            }
+            if (!window.WasmMediaEncoder?.createMp3Encoder) {
+                throw new Error("Fast audio encoder is unavailable.");
+            }
+            return window.WasmMediaEncoder;
+        })().catch((error) => {
+            fastAudioEncoderPromise = null;
+            throw error;
+        });
+    }
+    return fastAudioEncoderPromise;
+}
+
+async function decodeAudioFile(file) {
+    if (!window.AudioContext && !window.webkitAudioContext) {
+        throw new Error("This browser does not provide a native audio decoder.");
+    }
+
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    const context = new AudioContextClass();
+
+    try {
+        if (context.state === "suspended") {
+            await context.resume();
+        }
+        return await context.decodeAudioData(await file.arrayBuffer());
+    } finally {
+        await context.close().catch(() => {});
+    }
+}
+
+function audioBufferToPcm(audioBuffer) {
+    const channels = Math.min(2, audioBuffer.numberOfChannels);
+    const data = [];
+
+    for (let channel = 0; channel < channels; channel += 1) {
+        data.push(audioBuffer.getChannelData(channel));
+    }
+
+    if (channels === 1) data.push(data[0]);
+    return data;
+}
+
+async function convertAudioFastPath(outputFormat) {
+    if (outputFormat !== "mp3") return false;
+    if (isVideoFile(selectedFile) || isImageFile(selectedFile)) return false;
+
+    const inputFormat = getExtension(selectedFile.name);
+    if (inputFormat === "mp3") {
+        const blob = new Blob([await selectedFile.arrayBuffer()], { type: MIME_TYPES.mp3 });
+        makeDownload(blob, outputFormat);
+        setProgress(1);
+        setStatus("Already MP3. Your file is ready.");
+        return true;
+    }
+
+    try {
+        setStatus("Starting fast audio engine...");
+        const [encoderLib, audioBuffer] = await Promise.all([
+            getFastAudioEncoder(),
+            decodeAudioFile(selectedFile)
+        ]);
+
+        const channels = Math.min(2, audioBuffer.numberOfChannels);
+        const pcm = audioBufferToPcm(audioBuffer);
+        const encoder = await encoderLib.createMp3Encoder();
+        encoder.configure({
+            sampleRate: audioBuffer.sampleRate,
+            channels,
+            bitrate: 192
+        });
+
+        const chunks = [];
+        const blockSize = 65536;
+        const total = audioBuffer.length;
+
+        for (let offset = 0; offset < total; offset += blockSize) {
+            const end = Math.min(offset + blockSize, total);
+            const encoded = encoder.encode([
+                pcm[0].subarray(offset, end),
+                pcm[1].subarray(offset, end)
+            ]);
+            if (encoded.length) chunks.push(new Uint8Array(encoded));
+            setProgress((end / total) * 0.95);
+            setStatus(`Fast MP3 conversion... ${Math.round((end / total) * 100)}%`);
+            await new Promise((resolve) => setTimeout(resolve, 0));
+        }
+
+        const finalChunk = encoder.finalize();
+        if (finalChunk.length) chunks.push(new Uint8Array(finalChunk));
+
+        makeDownload(new Blob(chunks, { type: MIME_TYPES.mp3 }), outputFormat);
+        setProgress(1);
+        setStatus("Conversion complete! Your MP3 is ready.");
+        return true;
+    } catch (error) {
+        console.warn("Fast MP3 path unavailable; falling back to FFmpeg:", error);
+        setProgress(0);
+        return false;
+    }
 }
 
 async function toBlobURL(url, mimeType) {
@@ -115,7 +233,7 @@ async function toBlobURL(url, mimeType) {
 async function loadFFmpeg() {
     if (ffmpegLoaded) return;
 
-    setStatus("Loading converter... The first load can take a moment.");
+    setStatus("Loading full converter... This only happens when the fast engine cannot be used.");
     setProgress(0);
 
     const FFmpegConstructor = await getFFmpegConstructor();
@@ -190,9 +308,6 @@ convertButton.addEventListener("click", async () => {
     setProgress(0);
 
     try {
-        await loadFFmpeg();
-
-        const inputExtension = getExtension(selectedFile.name);
         const outputFormat = format.value.toLowerCase();
         const sourceIsVideo = isVideoFile(selectedFile);
         const sourceIsImage = isImageFile(selectedFile);
@@ -202,6 +317,11 @@ convertButton.addEventListener("click", async () => {
             throw new Error("Audio to video conversion needs a visual source. Choose an audio format, or select an image/video for a video output.");
         }
 
+        if (await convertAudioFastPath(outputFormat)) return;
+
+        await loadFFmpeg();
+
+        const inputExtension = getExtension(selectedFile.name);
         inputName = `input.${inputExtension}`;
         outputName = `output.${outputFormat}`;
 
@@ -220,21 +340,22 @@ convertButton.addEventListener("click", async () => {
                 "-t", "5",
                 "-an"
             ];
-            if (outputFormat === "webm") args.push("-b:v", "2M");
-            args.push(outputName);
+            if (outputFormat === "webm") args.push("-deadline", "realtime", "-cpu-used", "8", "-b:v", "1M");
+            else if (outputFormat !== "ogv") args.push("-preset", "ultrafast", "-crf", "28");
+            args.push("-y", outputName);
         } else if (targetIsVideo) {
             args = ["-i", inputName];
 
             if (outputFormat === "webm") {
-                args.push("-c:v", "libvpx-vp9", "-c:a", "libopus", "-b:v", "2M", "-b:a", "160k");
+                args.push("-c:v", "libvpx-vp9", "-deadline", "realtime", "-cpu-used", "8", "-row-mt", "1", "-b:v", "2M", "-c:a", "libopus", "-b:a", "128k");
             } else if (outputFormat === "ogv") {
-                args.push("-c:v", "libtheora", "-c:a", "libvorbis", "-q:v", "7", "-q:a", "5");
+                args.push("-c:v", "libtheora", "-q:v", "5", "-c:a", "libvorbis", "-q:a", "4");
             } else if (outputFormat === "avi") {
-                args.push("-c:v", "mpeg4", "-c:a", "mp3", "-q:v", "5", "-q:a", "3");
+                args.push("-c:v", "mpeg4", "-q:v", "6", "-c:a", "mp3", "-q:a", "5");
             } else if (outputFormat === "mpeg" || outputFormat === "mpg") {
-                args.push("-c:v", "mpeg2video", "-c:a", "mp2", "-b:v", "4M", "-b:a", "192k");
+                args.push("-c:v", "mpeg2video", "-c:a", "mp2", "-b:v", "3M", "-b:a", "160k");
             } else {
-                args.push("-c:v", "libx264", "-c:a", "aac", "-pix_fmt", "yuv420p", "-movflags", "+faststart");
+                args.push("-c:v", "libx264", "-preset", "ultrafast", "-crf", "28", "-c:a", "aac", "-b:a", "160k", "-pix_fmt", "yuv420p", "-movflags", "+faststart");
             }
 
             args.push("-shortest", "-y", outputName);
@@ -242,17 +363,17 @@ convertButton.addEventListener("click", async () => {
             args = ["-i", inputName, "-vn", "-y"];
 
             if (outputFormat === "mp3") {
-                args.push("-c:a", "libmp3lame", "-q:a", "2");
+                args.push("-c:a", "libmp3lame", "-b:a", "192k");
             } else if (outputFormat === "opus") {
-                args.push("-c:a", "libopus", "-b:a", "160k");
+                args.push("-c:a", "libopus", "-b:a", "160k", "-application", "audio");
             } else if (outputFormat === "aac") {
                 args.push("-c:a", "aac", "-b:a", "192k");
             } else if (outputFormat === "flac") {
-                args.push("-c:a", "flac");
+                args.push("-c:a", "flac", "-compression_level", "2");
             } else if (outputFormat === "wav") {
                 args.push("-c:a", "pcm_s16le");
             } else if (outputFormat === "ogg") {
-                args.push("-c:a", "libvorbis", "-q:a", "5");
+                args.push("-c:a", "libvorbis", "-q:a", "4");
             } else if (outputFormat === "m4a") {
                 args.push("-c:a", "aac", "-b:a", "192k");
             } else if (outputFormat === "aiff") {
@@ -270,16 +391,7 @@ convertButton.addEventListener("click", async () => {
             type: MIME_TYPES[outputFormat] || "application/octet-stream"
         });
 
-        downloadUrl = URL.createObjectURL(blob);
-
-        const link = document.createElement("a");
-        link.href = downloadUrl;
-        link.download = `${getBaseName(selectedFile.name)}.${outputFormat}`;
-        link.textContent = `Download ${outputFormat.toUpperCase()}`;
-        link.className = "download-button";
-        link.setAttribute("aria-label", `Download converted ${outputFormat} file`);
-        downloadArea.appendChild(link);
-
+        makeDownload(blob, outputFormat);
         setProgress(1);
         setStatus("Conversion complete! Your file is ready.");
     } catch (error) {
