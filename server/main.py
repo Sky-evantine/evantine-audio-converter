@@ -9,6 +9,7 @@ import yt_dlp
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from starlette.background import BackgroundTask
 
 app = FastAPI(title="Evantine YouTube Downloader")
 
@@ -37,6 +38,10 @@ def validate_youtube_url(value: str) -> str:
 def safe_filename(title: str, extension: str) -> str:
     cleaned = re.sub(r"[^\w\-. ]+", "", title, flags=re.UNICODE).strip() or "evantine-download"
     return f"{cleaned[:120]}.{extension}"
+
+
+def remove_temp_dir(path: Path) -> None:
+    shutil.rmtree(path, ignore_errors=True)
 
 
 @app.get("/health")
@@ -85,20 +90,15 @@ def youtube_download(
         extension = "mp3" if format == "mp3" else "mp4"
         filename = safe_filename(title, extension)
         media_type = "audio/mpeg" if format == "mp3" else "video/mp4"
-        return FileResponse(target, media_type=media_type, filename=filename, background=None)
+        cleanup = BackgroundTask(remove_temp_dir, temp_dir)
+        return FileResponse(target, media_type=media_type, filename=filename, background=cleanup)
     except yt_dlp.utils.DownloadError as exc:
+        remove_temp_dir(temp_dir)
         message = str(exc).splitlines()[-1][:500]
         raise HTTPException(status_code=502, detail=f"YouTube download failed: {message}") from exc
     except HTTPException:
+        remove_temp_dir(temp_dir)
         raise
     except Exception as exc:
+        remove_temp_dir(temp_dir)
         raise HTTPException(status_code=500, detail=f"Downloader error: {str(exc)[:500]}") from exc
-    finally:
-        # FileResponse may still need the file after this function returns, so cleanup is handled by a small wrapper below.
-        pass
-
-
-@app.on_event("shutdown")
-def shutdown_cleanup():
-    # Temporary download folders are cleaned by the host/container lifecycle.
-    pass
