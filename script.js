@@ -80,7 +80,7 @@ async function decodeAudio(file) {
     finally { await context.close().catch(() => {}); }
 }
 
-function audioBufferToWav(buffer) {
+async function audioBufferToWav(buffer) {
     const channels = Math.min(2, buffer.numberOfChannels);
     const frames = buffer.length;
     const dataSize = frames * channels * 2;
@@ -95,13 +95,19 @@ function audioBufferToWav(buffer) {
 
     const channelData = Array.from({ length: channels }, (_, i) => buffer.getChannelData(i));
     let offset = 44;
+    const yieldEvery = 65536;
     for (let frame = 0; frame < frames; frame++) {
         for (let channel = 0; channel < channels; channel++) {
             const sample = Math.max(-1, Math.min(1, channelData[channel][frame]));
             view.setInt16(offset, sample < 0 ? sample * 32768 : sample * 32767, true);
             offset += 2;
         }
-        if (frame % 8192 === 0) setProgress((frame / frames) * 0.95);
+        if ((frame + 1) % yieldEvery === 0 || frame === frames - 1) {
+            const progress = (frame + 1) / frames;
+            setProgress(progress * 0.95);
+            setStatus("Building WAV... " + Math.round(progress * 100) + "%");
+            await new Promise(resolve => requestAnimationFrame(resolve));
+        }
     }
     return new Blob([output], { type: "audio/wav" });
 }
@@ -163,7 +169,7 @@ convertButton.addEventListener("click", async () => {
         }
         setStatus("Reading audio...");
         const buffer = await decodeAudio(selectedFile);
-        const blob = outputFormat === "wav" ? audioBufferToWav(buffer) : await convertToMp3(buffer);
+        const blob = outputFormat === "wav" ? await audioBufferToWav(buffer) : await convertToMp3(buffer);
         makeDownload(blob, outputFormat);
         setProgress(1); setStatus(`Done. Your ${outputFormat.toUpperCase()} is ready.`); showDone(status);
     } catch (error) {
