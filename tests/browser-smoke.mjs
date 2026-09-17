@@ -18,9 +18,18 @@ function makeWav(seconds = 0.25, sampleRate = 8000) {
 
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage();
+page.setDefaultTimeout(120000);
 const errors = [];
 page.on("pageerror", error => errors.push(`pageerror: ${error.message}`));
 page.on("console", message => { if (message.type() === "error") errors.push(`console: ${message.text()}`); });
+
+async function assertDownload(extension) {
+    const link = page.locator("#downloadArea a");
+    await link.waitFor({ state: "attached", timeout: 120000 });
+    const result = await link.evaluate(anchor => ({ href: anchor.href, download: anchor.download }));
+    if (!result.href.startsWith("blob:")) throw new Error(`${extension.toUpperCase()} conversion did not create a blob download`);
+    if (result.download !== `smoke-test.${extension}`) throw new Error(`Unexpected ${extension.toUpperCase()} filename: ${result.download}`);
+}
 
 try {
     await page.goto(`http://127.0.0.1:${port}/`, { waitUntil: "networkidle", timeout: 120000 });
@@ -28,17 +37,11 @@ try {
 
     await page.selectOption("#format", "wav");
     await page.locator("#convertButton").click();
-    await page.locator("#downloadArea a").waitFor({ state: "visible", timeout: 30000 });
-    const wavResult = await page.locator("#downloadArea a").evaluate(link => ({ href: link.href, download: link.download }));
-    if (!wavResult.href.startsWith("blob:")) throw new Error("WAV conversion did not create a blob download");
-    if (wavResult.download !== "smoke-test.wav") throw new Error(`Unexpected WAV filename: ${wavResult.download}`);
+    await assertDownload("wav");
 
     await page.selectOption("#format", "mp3");
     await page.locator("#convertButton").click();
-    await page.locator("#downloadArea a").waitFor({ state: "visible", timeout: 60000 });
-    const mp3Result = await page.locator("#downloadArea a").evaluate(link => ({ href: link.href, download: link.download }));
-    if (!mp3Result.href.startsWith("blob:")) throw new Error("MP3 conversion did not create a blob download");
-    if (mp3Result.download !== "smoke-test.mp3") throw new Error(`Unexpected MP3 filename: ${mp3Result.download}`);
+    await assertDownload("mp3");
 
     if (errors.length) throw new Error(`Browser reported errors: ${errors.join(" | ")}`);
     console.log("Browser smoke test passed: WAV and MP3 conversion produced downloads.");
