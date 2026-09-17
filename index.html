@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Evantine Audio Converter | Free Online Audio Converter
+    </title>
+
+    <meta
+        name="description"
+        content="Free online audio converter by Evantine. Convert MP3, WAV, FLAC, OGG, M4A and more directly in your browser."
+    >
+
+    <meta
+        name="keywords"
+        content="audio converter, mp3 converter, wav converter, flac converter, ogg converter, m4a converter, free audio converter, Evantine"
+    >
+
+    <meta name="author" content="Evantine">
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+</head>
+
+
+<body>
+
+
+<!-- =========================
+     HEADER
+========================= -->
+
+<header class="site-header">
+
+    <a
+        href="#"
+        class="logo"
+    >
+        EVANTINE
+    </a>
+
+
+    <nav class="navigation">
+
+        <a href="#converter">
+            Converter
+        </a>
+
+        <a href="#features">
+            Features
+        </a>
+
+        <a href="#about">
+            About
+        </a>
+
+    </nav>
+
+</header>
+
+
+
+<!-- =========================
+     MAIN
+========================= -->
+
+<main>
+
+
+<!-- =========================
+     HERO
+========================= -->
+
+<section class="hero">
+
+    <div class="hero-content">
+
+        <p class="eyebrow">
+            EVANTINE AUDIO TOOLS
+        </p>
+
+
+        <h1>
+            Convert your audio.
+            <span>Simply.</span>
+        </h1>
+
+
+        <p class="hero-description">
+
+            Convert your music and audio files
+            between popular formats directly
+            in your browser.
+
+        </p>
+
+
+        <a
+            href="#converter"
+            class="hero-button"
+        >
+            Start Converting
+        </a>
+
+    </div>
+
+</section>
+
+
+
+<!-- =========================
+     CONVERTER
+========================= -->
+
+<section
+    class="converter-section"
+    id="converter"
+>
+
+    <div class="converter-card">
+
+
+        <!-- DROP ZONE -->
+
+        <div
+            class="drop-zone"
+            id="dropZone"
+        >
+
+            <div class="upload-icon">
+                ↑
+            </div>
+
+
+            <h2>
+                Drop your audio here
+            </h2>
+
+
+            <p>
+                or choose a file from your device
+            </p>
+
+
+            <button
+                type="button"
+                class="choose-button"
+                id="chooseButton"
+            >
+                Choose File
+            </button>
+
+
+            <input
+                type="file"
+                id="fileInput"
+                accept="audio/*,.mp3,.wav,.flac,.ogg,.m4a,.aac,.opus,.wma"
+                hidden
+            >
+
+
+            <p class="supported-text">
+
+                MP3 · WAV · FLAC · OGG · M4A · AAC · OPUS · WMA
+
+            </p>
+
+        </div>
+
+
+
+        <!-- FILE INFORMATION -->
+
+        <div
+            class="file-info"
+            id="fileInfo"
+            hidden
+        >
+
+            <div class="file-heading">
+
+                <div>
+
+                    <span class="label">
+                        SELECTED FILE
+                    </span>
+
+                    <h3 id="fileName">
+                        audio.mp3
+                    </h3>
+
+                </div>
+
+
+                <button
+                    type="button"
+                    class="remove-button"
+                    id="removeButton"
+                >
+                    Remove
+                </button>
+
+            </div>
+
+
+            <div class="file-meta">
+
+                <span id="fileSize">
+                    0 MB
+                </span>
+
+
+                <span id="fileType">
+                    Audio
+                </span>
+
+
+                <span id="fileDuration">
+                    0:00
+                </span>
+
+            </div>
+
+
+            <audio
+                id="audioPreview"
+                controls
+            ></audio>
+
+        </div>
+
+
+
+        <!-- SETTINGS -->
+
+        <div
+            class="settings"
+            id="settings"
+            hidden
+        >
+
+
+            <div class="setting-group">
+
+                <label for="format">
+                    Convert to
+                </label>
+
+                <select id="format">
+
+                    <option value="mp3">
+                        MP3
+                    </option>
+
+                    <option value="wav">
+                        WAV
+                    </option>
+
+                    <option value="flac">
+                        FLAC
+                    </option>
+
+                    <option value="ogg">
+                        OGG
+                    </option>
+
+                    <option value="m4a">
+                        M4A
+                    </option>
+
+                    <option value="aac">
+                        AAC
+                    </option>
+
+                    <option value="opus">
+                        OPUS
+                    </option>
+
+                </select>
+
+            </div>
+
+
+
+            <div
+                class="setting-group"
+                id="qualityGroup"
+            >
+
+                <label for="quality">
+                    Audio Quality
+                </label>
+
+                <select id="quality">
+
+                    <option value="128">
+                        128 kbps
+                    </option>
+
+                    <option
+                        value="192"
+                        selected
+                    >
+                        192 kbps
+                    </option>
+
+                    <option value="256">
+                        256 kbps
+                    </option>
+
+                    <option value="320">
+                        320 kbps
+                    </option>
+
+                </select>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- CONVERT BUTTON -->
+
+        <button
+            type="button"
+            class="convert-button"
+            id="convertButton"
+            disabled
+        >
+            Convert Audio
+        </button>
+
+
+
+        <!-- PROGRESS -->
+
+        <div
+            class="progress-container"
+            id="progressContainer"
+            hidden
+        >
+
+            <div class="progress-header">
+
+                <span id="progressText">
+                    Preparing...
+                </span>
+
+                <span id="progressPercent">
+                    0%
+                </span>
+
+            </div>
+
+
+            <div class="progress-bar">
+
+                <div
+                    class="progress-fill"
+                    id="progressFill"
+                ></div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- STATUS -->
+
+        <div
+            class="status"
+            id="status"
+        ></div>
+
+
+
+        <!-- DOWNLOAD -->
+
+        <div
+            class="download-area"
+            id="downloadArea"
+        ></div>
+
+
+    </div>
+
+</section>
+
+
+
+<!-- =========================
+     FEATURES
+========================= -->
+
+<section
+    class="features-section"
+    id="features"
+>
+
+    <div class="section-heading">
+
+        <p class="eyebrow">
+            WHY EVANTINE
+        </p>
+
+        <h2>
+            Built for creators.
+        </h2>
+
+    </div>
+
+
+
+    <div class="features-grid">
+
+
+        <article class="feature-card">
+
+            <div class="feature-number">
+                01
+            </div>
+
+            <h3>
+                Private
+            </h3>
+
+            <p>
+
+                Your files can be processed directly
+                inside your browser instead of being
+                uploaded to a conversion server.
+
+            </p>
+
+        </article>
+
+
+
+        <article class="feature-card">
+
+            <div class="feature-number">
+                02
+            </div>
+
+            <h3>
+                Multiple Formats
+            </h3>
+
+            <p>
+
+                Convert between popular audio formats
+                including MP3, WAV, FLAC, OGG, M4A,
+                AAC and OPUS.
+
+            </p>
+
+        </article>
+
+
+
+        <article class="feature-card">
+
+            <div class="feature-number">
+                03
+            </div>
+
+            <h3>
+                Simple
+            </h3>
+
+            <p>
+
+                No complicated software.
+                Drop your file, choose a format,
+                and convert.
+
+            </p>
+
+        </article>
+
+
+
+        <article class="feature-card">
+
+            <div class="feature-number">
+                04
+            </div>
+
+            <h3>
+                Creator Friendly
+            </h3>
+
+            <p>
+
+                Designed for musicians, producers,
+                artists, students and anyone working
+                with audio.
+
+            </p>
+
+        </article>
+
+    </div>
+
+</section>
+
+
+
+<!-- =========================
+     ABOUT
+========================= -->
+
+<section
+    class="about-section"
+    id="about"
+>
+
+    <div class="about-content">
+
+        <p class="eyebrow">
+            ABOUT EVANTINE
+        </p>
+
+
+        <h2>
+            Tools for people
+            who make things.
+        </h2>
+
+
+        <p>
+
+            Evantine is a creative brand built around
+            music, design, fashion and digital creativity.
+
+            Audio Tools is part of that idea:
+            useful tools made for creators.
+
+        </p>
+
+    </div>
+
+</section>
+
+
+</main>
+
+
+
+<!-- =========================
+     FOOTER
+========================= -->
+
+<footer class="site-footer">
+
+    <div>
+
+        <strong>
+            EVANTINE
+        </strong>
+
+        <p>
+            Audio tools for creators.
+        </p>
+
+    </div>
+
+
+    <div class="footer-links">
+
+        <a href="#converter">
+            Converter
+        </a>
+
+        <a href="#features">
+            Features
+        </a>
+
+        <a href="#about">
+            About
+        </a>
+
+    </div>
+
+
+    <div class="copyright">
+
+        © 2026 Evantine
+
+    </div>
+
+</footer>
+
+
+
+<!-- FFmpeg -->
+
+<script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/umd/ffmpeg.js"></script>
+
+<script src="script.js"></script>
+
+
+</body>
+
+</html>
