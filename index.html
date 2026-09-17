@@ -1,69 +1,92 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Convert audio files privately in your browser with Evantine Tools. Export MP3, WAV, OGG, FLAC, AAC, or M4A without uploading your files.">
+    <meta name="theme-color" content="#101014">
+    <link rel="canonical" href="https://evantinetools.com/">
+    <meta property="og:title" content="Evantine Audio Converter">
+    <meta property="og:description" content="A private browser-based audio converter for MP3, WAV, OGG, FLAC, AAC, and M4A files.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://evantinetools.com/">
     <title>Evantine Audio Converter</title>
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-
-    <header>
-        <h1>EVANTINE</h1>
-        <p>Audio Converter</p>
+    <header class="site-header">
+        <a class="brand" href="https://evantinetools.com/" aria-label="Evantine Tools home">
+            <span class="brand-mark" aria-hidden="true">E</span>
+            <span>
+                <span class="brand-name">Evantine</span>
+                <span class="brand-subtitle">Audio Converter</span>
+            </span>
+        </a>
     </header>
 
-    <main>
-
-        <section class="converter">
-
-            <h2>Convert your audio</h2>
-            <p>Select an audio file and choose your format.</p>
-
-            <input
-                type="file"
-                id="fileInput"
-                accept="audio/*"
-            >
-
-            <label for="fileInput" class="choose-button">
-                Choose Audio File
-            </label>
-
-            <p id="fileName"></p>
-
-            <div class="settings">
-
-                <label for="format">Output Format</label>
-
-                <select id="format">
-                    <option value="mp3">MP3</option>
-                    <option value="wav">WAV</option>
-                    <option value="ogg">OGG</option>
-                    <option value="flac">FLAC</option>
-                </select>
-
-                <button id="convertButton">
-                    Convert Audio
-                </button>
-
-            </div>
-
-            <div id="status"></div>
-
-            <div id="downloadArea"></div>
-
+    <main class="page-shell">
+        <section class="intro" aria-labelledby="pageTitle">
+            <p class="eyebrow">Private browser conversion</p>
+            <h1 id="pageTitle">Convert audio files without uploading them.</h1>
+            <p class="intro-copy">Choose an audio file, pick an output format, and download the converted file from this device. The converter runs locally in your browser.</p>
         </section>
 
+        <section class="converter" aria-labelledby="converterTitle">
+            <div class="converter-heading">
+                <div>
+                    <h2 id="converterTitle">Audio converter</h2>
+                    <p id="converterHelp">MP3, WAV, OGG, FLAC, AAC, and M4A outputs are supported.</p>
+                </div>
+                <span class="privacy-pill">Local only</span>
+            </div>
+
+            <div class="upload-zone" id="dropZone">
+                <input id="fileInput" class="file-input" type="file" accept="audio/*" aria-describedby="converterHelp fileDetails">
+                <label class="file-label" for="fileInput">
+                    <span class="file-label-icon" aria-hidden="true">+</span>
+                    <span>Choose audio file</span>
+                </label>
+                <p id="fileDetails" class="file-details">No file selected</p>
+            </div>
+
+            <div class="settings-grid">
+                <label class="field">
+                    <span>Output format</span>
+                    <select id="format">
+                        <option value="mp3">MP3</option>
+                        <option value="wav">WAV</option>
+                        <option value="ogg">OGG</option>
+                        <option value="flac">FLAC</option>
+                        <option value="aac">AAC</option>
+                        <option value="m4a">M4A</option>
+                    </select>
+                </label>
+
+                <button id="convertButton" class="primary-button" type="button" disabled>
+                    Convert file
+                </button>
+            </div>
+
+            <div class="status-panel" role="status" aria-live="polite">
+                <div class="status-row">
+                    <span id="statusLabel">Waiting for a file</span>
+                    <span id="progressText">0%</span>
+                </div>
+                <div class="progress-track" aria-hidden="true">
+                    <span id="progressBar" class="progress-bar"></span>
+                </div>
+            </div>
+
+            <div id="downloadArea" class="download-area" aria-live="polite"></div>
+        </section>
     </main>
 
-    <footer>
-        <p>© 2026 Evantine</p>
+    <footer class="site-footer">
+        <span>&copy; 2026 Evantine Tools</span>
+        <a href="https://evantinetools.com/">evantinetools.com</a>
     </footer>
 
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.15/dist/umd/ffmpeg.js"></script>
     <script src="script.js"></script>
-
 </body>
 </html>
