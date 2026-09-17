@@ -120,7 +120,7 @@ async function getFastAudioEncoder() {
             if (!window.WasmMediaEncoder) {
                 await loadScript("https://unpkg.com/wasm-media-encoders@0.7.0/dist/umd/WasmMediaEncoder.min.js?v=20260917");
             }
-            if (!window.WasmMediaEncoder?.createMp3Encoder) {
+            if (!window.WasmMediaEncoder?.createMp3Encoder || !window.WasmMediaEncoder?.createOggEncoder) {
                 throw new Error("Fast audio encoder is unavailable.");
             }
             return window.WasmMediaEncoder;
@@ -163,15 +163,15 @@ function audioBufferToPcm(audioBuffer) {
 }
 
 async function convertAudioFastPath(outputFormat) {
-    if (outputFormat !== "mp3") return false;
+    if (outputFormat !== "mp3" && outputFormat !== "ogg") return false;
     if (isVideoFile(selectedFile) || isImageFile(selectedFile)) return false;
 
     const inputFormat = getExtension(selectedFile.name);
-    if (inputFormat === "mp3") {
-        const blob = new Blob([await selectedFile.arrayBuffer()], { type: MIME_TYPES.mp3 });
+    if (inputFormat === outputFormat) {
+        const blob = new Blob([await selectedFile.arrayBuffer()], { type: MIME_TYPES[outputFormat] });
         makeDownload(blob, outputFormat);
         setProgress(1);
-        setStatus("Already MP3. Your file is ready.");
+        setStatus(`Already ${outputFormat.toUpperCase()}. Your file is ready.`);
         return true;
     }
 
@@ -184,11 +184,13 @@ async function convertAudioFastPath(outputFormat) {
 
         const channels = Math.min(2, audioBuffer.numberOfChannels);
         const pcm = audioBufferToPcm(audioBuffer);
-        const encoder = await encoderLib.createMp3Encoder();
+        const encoder = outputFormat === "mp3"
+            ? await encoderLib.createMp3Encoder()
+            : await encoderLib.createOggEncoder();
         encoder.configure({
             sampleRate: audioBuffer.sampleRate,
             channels,
-            bitrate: 192
+            ...(outputFormat === "mp3" ? { bitrate: 192 } : { vbrQuality: 4 })
         });
 
         const chunks = [];
@@ -203,19 +205,19 @@ async function convertAudioFastPath(outputFormat) {
             ]);
             if (encoded.length) chunks.push(new Uint8Array(encoded));
             setProgress((end / total) * 0.95);
-            setStatus(`Fast MP3 conversion... ${Math.round((end / total) * 100)}%`);
+            setStatus(`Fast ${outputFormat.toUpperCase()} conversion... ${Math.round((end / total) * 100)}%`);
             await new Promise((resolve) => setTimeout(resolve, 0));
         }
 
         const finalChunk = encoder.finalize();
         if (finalChunk.length) chunks.push(new Uint8Array(finalChunk));
 
-        makeDownload(new Blob(chunks, { type: MIME_TYPES.mp3 }), outputFormat);
+        makeDownload(new Blob(chunks, { type: MIME_TYPES[outputFormat] }), outputFormat);
         setProgress(1);
-        setStatus("Conversion complete! Your MP3 is ready.");
+        setStatus(`Conversion complete! Your ${outputFormat.toUpperCase()} is ready.`);
         return true;
     } catch (error) {
-        console.warn("Fast MP3 path unavailable; falling back to FFmpeg:", error);
+        console.warn(`Fast ${outputFormat.toUpperCase()} path unavailable; falling back to FFmpeg:`, error);
         setProgress(0);
         return false;
     }
