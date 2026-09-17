@@ -74,16 +74,33 @@ function revokeDownloadUrl() {
     }
 }
 
-async function waitForFFmpegLibrary(timeout = 10000) {
-    const started = Date.now();
+function loadScript(src) {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = src;
+        script.async = false;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error(`Could not load ${src}`));
+        document.head.appendChild(script);
+    });
+}
 
-    while (Date.now() - started < timeout) {
-        const Constructor = window.FFmpegWASM?.FFmpeg;
-        if (Constructor) return Constructor;
-        await new Promise((resolve) => setTimeout(resolve, 100));
+async function getFFmpegConstructor() {
+    if (window.FFmpegWASM?.FFmpeg) return window.FFmpegWASM.FFmpeg;
+
+    // The local copy is preferred. If a phone has an old/corrupt cached copy,
+    // fall back to the official UMD build rather than leaving the converter dead.
+    try {
+        await loadScript("https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/umd/ffmpeg.js?v=20260917");
+    } catch (error) {
+        console.debug("FFmpeg CDN fallback failed:", error);
     }
 
-    throw new Error("FFmpeg library did not load. Please refresh the page and try again.");
+    const Constructor = window.FFmpegWASM?.FFmpeg;
+    if (!Constructor) {
+        throw new Error("FFmpeg library did not load. Check your connection and refresh the page.");
+    }
+    return Constructor;
 }
 
 async function toBlobURL(url, mimeType) {
@@ -101,7 +118,7 @@ async function loadFFmpeg() {
     setStatus("Loading converter... The first load can take a moment.");
     setProgress(0);
 
-    const FFmpegConstructor = await waitForFFmpegLibrary();
+    const FFmpegConstructor = await getFFmpegConstructor();
     ffmpeg = new FFmpegConstructor();
 
     ffmpeg.on("progress", ({ progress }) => {
