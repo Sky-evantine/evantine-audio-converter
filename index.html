@@ -3,59 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evantine Audio Converter</title>
+    <meta name="description" content="Evantine Audio and Video Converter. Convert media files directly in your browser.">
+    <title>Evantine Media Converter</title>
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-
     <header>
-        <h1>EVANTINE</h1>
-        <p>Audio Converter</p>
+        <p class="eyebrow">EVANTINE</p>
+        <h1>Media Converter</h1>
+        <p>Convert audio and video files directly in your browser.</p>
     </header>
 
     <main>
+        <section class="converter" aria-labelledby="converter-title">
+            <h2 id="converter-title">Convert your file</h2>
+            <p class="intro">Your file stays on your device. Choose a file, select an output format, and convert.</p>
 
-        <section class="converter">
-
-            <h2>Convert your audio</h2>
-            <p>Select an audio file and choose your format.</p>
-
-            <input
-                type="file"
-                id="fileInput"
-                accept="audio/*"
-            >
-
-            <label for="fileInput" class="choose-button">
-                Choose Audio File
-            </label>
-
-            <p id="fileName"></p>
+            <input type="file" id="fileInput" accept="*/*">
+            <label for="fileInput" class="choose-button">Choose File</label>
+            <p id="fileName" class="file-name" aria-live="polite">No file selected</p>
 
             <div class="settings">
-
                 <label for="format">Output Format</label>
-
                 <select id="format">
-                    <option value="mp3">MP3</option>
-                    <option value="wav">WAV</option>
-                    <option value="ogg">OGG</option>
-                    <option value="flac">FLAC</option>
+                    <optgroup label="Audio">
+                        <option value="mp3">MP3</option>
+                        <option value="wav">WAV</option>
+                        <option value="flac">FLAC</option>
+                        <option value="ogg">OGG</option>
+                        <option value="opus">Opus</option>
+                        <option value="aac">AAC</option>
+                        <option value="m4a">M4A</option>
+                        <option value="aiff">AIFF</option>
+                    </optgroup>
+                    <optgroup label="Video">
+                        <option value="mp4">MP4</option>
+                        <option value="webm">WebM</option>
+                        <option value="mkv">MKV</option>
+                        <option value="mov">MOV</option>
+                        <option value="avi">AVI</option>
+                        <option value="mpeg">MPEG</option>
+                        <option value="mpg">MPG</option>
+                        <option value="ogv">OGV</option>
+                    </optgroup>
                 </select>
 
-                <button id="convertButton">
-                    Convert Audio
-                </button>
-
+                <button id="convertButton" disabled>Convert File</button>
             </div>
 
-            <div id="status"></div>
+            <div class="progress-wrap" aria-live="polite">
+                <div class="progress-track" aria-hidden="true">
+                    <div id="progressBar" class="progress-bar"></div>
+                </div>
+                <p id="status">Choose a file to begin.</p>
+            </div>
 
             <div id="downloadArea"></div>
-
+            <p class="note">Large files can take a while because conversion happens locally in your browser.</p>
         </section>
-
     </main>
 
     <footer>
@@ -64,6 +69,5 @@
 
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.15/dist/umd/ffmpeg.js"></script>
     <script src="script.js"></script>
-
 </body>
 </html>
