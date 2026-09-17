@@ -162,20 +162,60 @@ if (hubCarousel && window.Splide) {
     }).mount();
 }
 
-fileInput.addEventListener("change", () => {
-    selectedFile = fileInput.files?.[0] || null;
+function isSupportedAudioFile(file) {
+    return file && /\\.(mp3|wav)$/i.test(file.name);
+}
+
+function showSelectedFile(file) {
+    selectedFile = file;
     revokeDownload();
     downloadArea.replaceChildren();
     setProgress(0);
-    convertButton.disabled = !selectedFile;
-    fileName.textContent = selectedFile ? `Selected: ${selectedFile.name}` : "No file selected";
+    convertButton.disabled = !file;
+    fileName.textContent = file ? `Selected: ${file.name}` : "No file selected";
     fileName.classList.remove("file-selected");
-    if (selectedFile) {
+    if (file) {
         void fileName.offsetWidth;
         fileName.classList.add("file-selected");
     }
-    setStatus(selectedFile ? "Ready. Choose MP3 or WAV." : "Choose an audio file to begin.");
+    setStatus(file ? "Ready. Choose MP3 or WAV." : "Choose an audio file to begin.");
+}
+
+function handleDroppedFile(file) {
+    if (!file) return;
+    if (!isSupportedAudioFile(file)) {
+        setStatus("Please drop an MP3 or WAV file.");
+        return;
+    }
+    showSelectedFile(file);
+}
+
+fileInput.addEventListener("change", () => {
+    handleDroppedFile(fileInput.files?.[0] || null);
 });
+
+const converterCard = document.querySelector(".converter");
+if (converterCard) {
+    ["dragenter", "dragover"].forEach(eventName => {
+        converterCard.addEventListener(eventName, event => {
+            event.preventDefault();
+            converterCard.classList.add("is-dragging");
+            setStatus("Drop your MP3 or WAV here.");
+        });
+    });
+
+    ["dragleave", "drop"].forEach(eventName => {
+        converterCard.addEventListener(eventName, event => {
+            event.preventDefault();
+            converterCard.classList.remove("is-dragging");
+        });
+    });
+
+    converterCard.addEventListener("drop", event => {
+        handleDroppedFile(event.dataTransfer?.files?.[0] || null);
+    });
+});
+
 
 convertButton.addEventListener("click", async () => {
     if (!selectedFile) return;
