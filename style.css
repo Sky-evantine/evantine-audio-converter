@@ -137,3 +137,12 @@ footer {
     padding: 30px;
     color: #666;
 }
+
+footer a {
+    color: #aaa;
+    text-decoration: none;
+}
+
+footer a:hover {
+    color: white;
+}
