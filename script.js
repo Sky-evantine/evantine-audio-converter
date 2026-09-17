@@ -1,6 +1,6 @@
-const { FFmpeg } = window.FFmpeg;
+const FFmpegClass = FFmpegWASM.FFmpeg;
 
-const ffmpeg = new FFmpeg();
+const ffmpeg = new FFmpegClass();
 
 const fileInput = document.getElementById("fileInput");
 const fileName = document.getElementById("fileName");
