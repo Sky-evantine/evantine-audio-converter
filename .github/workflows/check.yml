@@ -35,3 +35,23 @@ jobs:
           grep -q 'ffmpeg.exec' script.js
           grep -q 'ffmpeg.readFile' script.js
           grep -q 'accept="\*/\*"' index.html
+
+  browser-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Playwright
+        run: npm install --no-save playwright@latest
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run real browser conversion test
+        run: node tests/browser-smoke.mjs
