@@ -21,6 +21,16 @@ function setStatus(message) { status.textContent = message; }
 function setProgress(value) { progressBar.style.width = `${Math.max(0, Math.min(100, Math.round(value * 100)))}%`; }
 function baseName(name) { return name.replace(/\.[^/.]+$/, ""); }
 
+function setConverting(isConverting) {
+    document.body.classList.toggle("is-converting", isConverting);
+}
+
+function showDone(element) {
+    element.classList.remove("status-done");
+    void element.offsetWidth;
+    element.classList.add("status-done");
+}
+
 function revokeDownload() {
     if (downloadUrl) URL.revokeObjectURL(downloadUrl);
     downloadUrl = null;
@@ -126,30 +136,40 @@ fileInput.addEventListener("change", () => {
     setProgress(0);
     convertButton.disabled = !selectedFile;
     fileName.textContent = selectedFile ? `Selected: ${selectedFile.name}` : "No file selected";
+    fileName.classList.remove("file-selected");
+    if (selectedFile) {
+        void fileName.offsetWidth;
+        fileName.classList.add("file-selected");
+    }
     setStatus(selectedFile ? "Ready. Choose MP3 or WAV." : "Choose an audio file to begin.");
 });
 
 convertButton.addEventListener("click", async () => {
     if (!selectedFile) return;
     convertButton.disabled = true;
+    setConverting(true);
     setProgress(0);
     downloadArea.replaceChildren();
+    status.classList.remove("status-done");
     try {
         const outputFormat = format.value;
         const inputFormat = selectedFile.name.split(".").pop()?.toLowerCase();
         if (inputFormat === outputFormat) {
             makeDownload(new Blob([await selectedFile.arrayBuffer()], { type: outputFormat === "mp3" ? "audio/mpeg" : "audio/wav" }), outputFormat);
-            setProgress(1); setStatus(`Already ${outputFormat.toUpperCase()}. Ready to download.`); return;
+            setProgress(1); setStatus(`Already ${outputFormat.toUpperCase()}. Ready to download.`); showDone(status); return;
         }
         setStatus("Reading audio...");
         const buffer = await decodeAudio(selectedFile);
         const blob = outputFormat === "wav" ? audioBufferToWav(buffer) : await convertToMp3(buffer);
         makeDownload(blob, outputFormat);
-        setProgress(1); setStatus(`Done. Your ${outputFormat.toUpperCase()} is ready.`);
+        setProgress(1); setStatus(`Done. Your ${outputFormat.toUpperCase()} is ready.`); showDone(status);
     } catch (error) {
         console.error("Evantine conversion error:", error);
         setProgress(0); setStatus(`Conversion failed: ${error instanceof Error ? error.message : String(error)}`);
-    } finally { convertButton.disabled = false; }
+    } finally {
+        setConverting(false);
+        convertButton.disabled = false;
+    }
 });
 
 function isYouTubeUrl(value) {
@@ -171,6 +191,7 @@ youtubeButton.addEventListener("click", async () => {
     }
 
     youtubeButton.disabled = true;
+    youtubeStatus.classList.remove("status-done");
     youtubeStatus.textContent = `Preparing ${outputFormat.toUpperCase()} download...`;
 
     try {
@@ -200,6 +221,7 @@ youtubeButton.addEventListener("click", async () => {
         link.remove();
         setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
         youtubeStatus.textContent = `Done. Your ${outputFormat.toUpperCase()} download should start now.`;
+        showDone(youtubeStatus);
     } catch (error) {
         console.error("Evantine YouTube error:", error);
         youtubeStatus.textContent = `Download failed: ${error instanceof Error ? error.message : String(error)}`;
