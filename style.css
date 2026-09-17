@@ -79,17 +79,103 @@ header > p:last-child {
     z-index: 2;
 }
 
-#evantineHubs .splide__arrow {
-    width: 48px;
-    height: 48px;
-    background: #15151c;
-    border: 1px solid #393944;
-    opacity: 1;
-    box-shadow: 0 12px 30px rgba(0,0,0,.3);
+#evantineHubs .splide__arrows {
+    pointer-events: none;
 }
-#evantineHubs .splide__arrow svg { fill: #fff; }
-#evantineHubs .splide__arrow--prev { left: -18px; }
-#evantineHubs .splide__arrow--next { right: -18px; }
+
+#evantineHubs .splide__arrow {
+    position: absolute;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: rgba(18, 18, 25, .88);
+    border: 1px solid rgba(255, 255, 255, .22);
+    box-shadow:
+        0 14px 34px rgba(0, 0, 0, .45),
+        inset 0 0 0 1px rgba(255, 255, 255, .035);
+    opacity: 1;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    pointer-events: auto;
+    overflow: hidden;
+    transition:
+        transform .25s cubic-bezier(.22,1,.36,1),
+        background .25s ease,
+        border-color .25s ease,
+        box-shadow .25s ease;
+}
+
+#evantineHubs .splide__arrow::before {
+    content: "";
+    position: absolute;
+    inset: 5px;
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: inherit;
+    transition: inset .25s ease, border-color .25s ease;
+}
+
+#evantineHubs .splide__arrow::after {
+    content: "";
+    position: absolute;
+    width: 11px;
+    height: 11px;
+    border-top: 2px solid #fff;
+    border-right: 2px solid #fff;
+    transition: transform .25s cubic-bezier(.22,1,.36,1);
+}
+
+#evantineHubs .splide__arrow--next::after {
+    transform: rotate(45deg) translate(-1px, 1px);
+}
+
+#evantineHubs .splide__arrow--prev::after {
+    transform: rotate(-135deg) translate(-1px, 1px);
+}
+
+#evantineHubs .splide__arrow svg {
+    display: none;
+}
+
+#evantineHubs .splide__arrow:hover {
+    background: rgba(255, 255, 255, .1);
+    border-color: rgba(255, 255, 255, .48);
+    box-shadow:
+        0 18px 42px rgba(0, 0, 0, .55),
+        0 0 28px rgba(255, 255, 255, .08),
+        inset 0 0 0 1px rgba(255, 255, 255, .07);
+}
+
+#evantineHubs .splide__arrow:hover::before {
+    inset: 3px;
+    border-color: rgba(255, 255, 255, .16);
+}
+
+#evantineHubs .splide__arrow--next:hover {
+    transform: translateX(3px) scale(1.04);
+}
+
+#evantineHubs .splide__arrow--prev:hover {
+    transform: translateX(-3px) scale(1.04);
+}
+
+#evantineHubs .splide__arrow:active {
+    transform: scale(.94);
+}
+
+#evantineHubs .splide__arrow:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 4px;
+}
+
+#evantineHubs .splide__arrow--prev {
+    left: -28px;
+}
+
+#evantineHubs .splide__arrow--next {
+    right: -28px;
+}
 
 #evantineHubs .splide__pagination {
     bottom: -2px;
