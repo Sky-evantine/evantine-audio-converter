@@ -1,1272 +1,559 @@
-/* =========================
-   EVANTINE AUDIO TOOLS
-   MAIN JAVASCRIPT
-========================= */
-
-
-/* =========================
-   ELEMENTS
-========================= */
-
-const fileInput =
-    document.getElementById("fileInput");
-
-const chooseButton =
-    document.getElementById("chooseButton");
-
-const dropZone =
-    document.getElementById("dropZone");
-
-const fileInfo =
-    document.getElementById("fileInfo");
-
-const fileName =
-    document.getElementById("fileName");
-
-const fileSize =
-    document.getElementById("fileSize");
-
-const fileType =
-    document.getElementById("fileType");
-
-const fileDuration =
-    document.getElementById("fileDuration");
-
-const audioPreview =
-    document.getElementById("audioPreview");
-
-const removeButton =
-    document.getElementById("removeButton");
-
-const settings =
-    document.getElementById("settings");
-
-const formatSelect =
-    document.getElementById("format");
-
-const qualitySelect =
-    document.getElementById("quality");
-
-const qualityGroup =
-    document.getElementById("qualityGroup");
-
-const convertButton =
-    document.getElementById("convertButton");
-
-const progressContainer =
-    document.getElementById("progressContainer");
-
-const progressFill =
-    document.getElementById("progressFill");
-
-const progressPercent =
-    document.getElementById("progressPercent");
-
-const progressText =
-    document.getElementById("progressText");
-
-const status =
-    document.getElementById("status");
-
-const downloadArea =
-    document.getElementById("downloadArea");
-
-
-/* =========================
-   STATE
-========================= */
-
-let selectedFile = null;
-
-let previewURL = null;
-
-let downloadURL = null;
+const { FFmpeg } = window.FFmpeg;
 
 let ffmpeg = null;
-
 let ffmpegLoaded = false;
-
+let selectedFile = null;
+let previewURL = null;
+let downloadURL = null;
 let ffmpegLoading = false;
 
+// Elements
+const fileInput = document.getElementById("fileInput");
+const chooseFileBtn = document.getElementById("chooseFileBtn");
+const dropZone = document.getElementById("dropZone");
 
-/* =========================
-   FILE BUTTON
-========================= */
+const fileName = document.getElementById("fileName");
+const fileSize = document.getElementById("fileSize");
+const fileType = document.getElementById("fileType");
+const fileDuration = document.getElementById("fileDuration");
 
-chooseButton.addEventListener(
-    "click",
-    function () {
+const audioPreview = document.getElementById("audioPreview");
+const fileInfo = document.getElementById("fileInfo");
+const removeFileBtn = document.getElementById("removeFileBtn");
 
-        fileInput.click();
+const outputFormat = document.getElementById("outputFormat");
+const quality = document.getElementById("quality");
+const qualityGroup = document.getElementById("qualityGroup");
 
-    }
+const convertBtn = document.getElementById("convertBtn");
+const progressContainer = document.getElementById("progressContainer");
+const progressBar = document.getElementById("progressBar");
+const statusText = document.getElementById("statusText");
+
+const downloadArea = document.getElementById("downloadArea");
+const downloadBtn = document.getElementById("downloadBtn");
+
+// --------------------------------------------------
+// File selection
+// --------------------------------------------------
+
+chooseFileBtn.addEventListener("click", () => {
+fileInput.click();
+});
+
+fileInput.addEventListener("change", (event) => {
+if (event.target.files.length > 0) {
+handleFile(event.target.files[0]);
+}
+});
+
+// Drag and drop
+dropZone.addEventListener("dragover", (event) => {
+event.preventDefault();
+dropZone.classList.add("dragover");
+});
+
+dropZone.addEventListener("dragleave", () => {
+dropZone.classList.remove("dragover");
+});
+
+dropZone.addEventListener("drop", (event) => {
+event.preventDefault();
+dropZone.classList.remove("dragover");
+
+```
+const file = event.dataTransfer.files[0];
+
+if (file) {
+    handleFile(file);
+}
+```
+
+});
+
+// --------------------------------------------------
+// Handle selected file
+// --------------------------------------------------
+
+function handleFile(file) {
+if (!file.type.startsWith("audio/")) {
+setStatus("Please choose a valid audio file.", true);
+return;
+}
+
+```
+selectedFile = file;
+
+if (previewURL) {
+    URL.revokeObjectURL(previewURL);
+}
+
+previewURL = URL.createObjectURL(file);
+
+audioPreview.src = previewURL;
+
+fileName.textContent = file.name;
+fileSize.textContent = formatFileSize(file.size);
+fileType.textContent = file.type || "Unknown";
+
+fileInfo.style.display = "block";
+audioPreview.style.display = "block";
+removeFileBtn.style.display = "inline-flex";
+
+downloadArea.style.display = "none";
+
+audioPreview.addEventListener(
+    "loadedmetadata",
+    () => {
+        if (isFinite(audioPreview.duration)) {
+            fileDuration.textContent = formatDuration(audioPreview.duration);
+        } else {
+            fileDuration.textContent = "Unknown";
+        }
+    },
+    { once: true }
 );
 
-
-/* =========================
-   FILE INPUT
-========================= */
-
-fileInput.addEventListener(
-    "change",
-    function () {
-
-        const file =
-            fileInput.files[0];
-
-        if (file) {
-
-            loadFile(file);
-
-        }
-
-    }
-);
-
-
-/* =========================
-   LOAD FILE
-========================= */
-
-function loadFile(file) {
-
-
-    if (
-        !file.type.startsWith("audio/") &&
-        !isSupportedAudio(file.name)
-    ) {
-
-        showStatus(
-            "Please select a supported audio file."
-        );
-
-        return;
-
-    }
-
-
-    selectedFile = file;
-
-
-    fileName.textContent =
-        file.name;
-
-
-    fileSize.textContent =
-        formatFileSize(file.size);
-
-
-    fileType.textContent =
-        getFileExtension(file.name)
-            .toUpperCase();
-
-
-    fileInfo.hidden = false;
-
-    settings.hidden = false;
-
-    convertButton.disabled = false;
-
-
-    downloadArea.innerHTML = "";
-
-    progressContainer.hidden = true;
-
-    updateProgress(0);
-
-
-    if (previewURL) {
-
-        URL.revokeObjectURL(
-            previewURL
-        );
-
-    }
-
-
-    previewURL =
-        URL.createObjectURL(file);
-
-
-    audioPreview.src =
-        previewURL;
-
-
-    audioPreview.load();
-
-
-    audioPreview.addEventListener(
-        "loadedmetadata",
-        function () {
-
-            if (
-                Number.isFinite(
-                    audioPreview.duration
-                )
-            ) {
-
-                fileDuration.textContent =
-                    formatDuration(
-                        audioPreview.duration
-                    );
-
-            }
-
-        },
-        {
-            once: true
-        }
-    );
-
-
-    showStatus("");
+setStatus("File ready to convert.");
+```
 
 }
 
+// --------------------------------------------------
+// Remove file
+// --------------------------------------------------
 
-/* =========================
-   REMOVE FILE
-========================= */
+removeFileBtn.addEventListener("click", resetFile);
 
-removeButton.addEventListener(
-    "click",
-    resetConverter
-);
+function resetFile() {
+selectedFile = null;
 
+```
+if (previewURL) {
+    URL.revokeObjectURL(previewURL);
+    previewURL = null;
+}
 
-function resetConverter() {
+if (downloadURL) {
+    URL.revokeObjectURL(downloadURL);
+    downloadURL = null;
+}
 
+fileInput.value = "";
 
-    selectedFile = null;
+audioPreview.pause();
+audioPreview.removeAttribute("src");
+audioPreview.load();
 
+fileInfo.style.display = "none";
+audioPreview.style.display = "none";
+removeFileBtn.style.display = "none";
+downloadArea.style.display = "none";
 
-    fileInput.value = "";
+progressContainer.style.display = "none";
+progressBar.style.width = "0%";
 
-
-    fileInfo.hidden = true;
-
-    settings.hidden = true;
-
-
-    convertButton.disabled = true;
-
-
-    progressContainer.hidden = true;
-
-
-    downloadArea.innerHTML = "";
-
-
-    audioPreview.pause();
-
-    audioPreview.removeAttribute(
-        "src"
-    );
-
-    audioPreview.load();
-
-
-    if (previewURL) {
-
-        URL.revokeObjectURL(
-            previewURL
-        );
-
-        previewURL = null;
-
-    }
-
-
-    if (downloadURL) {
-
-        URL.revokeObjectURL(
-            downloadURL
-        );
-
-        downloadURL = null;
-
-    }
-
-
-    updateProgress(0);
-
-    showStatus("");
+setStatus("Select an audio file to begin.");
+```
 
 }
 
+// --------------------------------------------------
+// Output format settings
+// --------------------------------------------------
 
-/* =========================
-   DRAG AND DROP
-========================= */
+outputFormat.addEventListener("change", () => {
+const format = outputFormat.value;
 
-dropZone.addEventListener(
-    "dragover",
-    function (event) {
-
-        event.preventDefault();
-
-        dropZone.classList.add(
-            "dragging"
-        );
-
-    }
-);
-
-
-dropZone.addEventListener(
-    "dragleave",
-    function () {
-
-        dropZone.classList.remove(
-            "dragging"
-        );
-
-    }
-);
-
-
-dropZone.addEventListener(
-    "drop",
-    function (event) {
-
-        event.preventDefault();
-
-
-        dropZone.classList.remove(
-            "dragging"
-        );
-
-
-        const file =
-            event.dataTransfer.files[0];
-
-
-        if (file) {
-
-            loadFile(file);
-
-        }
-
-    }
-);
-
-
-/* =========================
-   FORMAT SETTINGS
-========================= */
-
-formatSelect.addEventListener(
-    "change",
-    updateQualitySetting
-);
-
-
-function updateQualitySetting() {
-
-
-    const format =
-        formatSelect.value;
-
-
-    if (
-        format === "wav" ||
-        format === "flac"
-    ) {
-
-        qualityGroup.style.display =
-            "none";
-
-    }
-
-    else {
-
-        qualityGroup.style.display =
-            "flex";
-
-    }
-
+```
+if (format === "wav" || format === "flac") {
+    qualityGroup.style.display = "none";
+} else {
+    qualityGroup.style.display = "block";
 }
+```
 
+});
 
-/* =========================
-   LOAD FFMPEG
-========================= */
+// --------------------------------------------------
+// Load FFmpeg
+// --------------------------------------------------
 
 async function loadFFmpeg() {
+if (ffmpegLoaded) {
+return true;
+}
 
+```
+if (ffmpegLoading) {
+    return false;
+}
 
-    if (ffmpegLoaded) {
+ffmpegLoading = true;
 
-        return;
+try {
+    setStatus("Loading audio converter...");
 
-    }
+    const { toBlobURL } = window.FFmpegUtil;
 
+    ffmpeg = new FFmpeg();
 
-    if (ffmpegLoading) {
+    ffmpeg.on("log", ({ message }) => {
+        console.log("[FFmpeg]", message);
+    });
 
-        while (ffmpegLoading) {
-
-            await wait(100);
-
+    ffmpeg.on("progress", ({ progress }) => {
+        if (progress >= 0 && progress <= 1) {
+            progressBar.style.width = `${Math.round(progress * 100)}%`;
         }
+    });
 
-        return;
+    const baseURL =
+        "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
 
-    }
-
-
-    ffmpegLoading = true;
-
-
-    showStatus(
-        "Loading converter engine..."
+    const coreURL = await toBlobURL(
+        `${baseURL}/ffmpeg-core.js`,
+        "text/javascript"
     );
 
+    const wasmURL = await toBlobURL(
+        `${baseURL}/ffmpeg-core.wasm`,
+        "application/wasm"
+    );
 
-    progressContainer.hidden =
-        false;
+    await ffmpeg.load({
+        coreURL,
+        wasmURL
+    });
 
+    ffmpegLoaded = true;
+    ffmpegLoading = false;
 
-    progressText.textContent =
-        "Loading converter";
+    return true;
 
+} catch (error) {
+    console.error("FFmpeg loading error:", error);
 
-    updateProgress(5);
+    ffmpegLoading = false;
 
+    setStatus(
+        "Could not load the audio converter. Please refresh the page and try again.",
+        true
+    );
 
-    try {
-
-
-        if (
-            typeof FFmpeg ===
-            "undefined"
-        ) {
-
-            throw new Error(
-                "FFmpeg library was not loaded."
-            );
-
-        }
-
-
-        const {
-            FFmpeg
-        } = window.FFmpeg;
-
-
-        ffmpeg =
-            new FFmpeg();
-
-
-        ffmpeg.on(
-            "progress",
-            function ({
-                progress
-            }) {
-
-                const percent =
-                    Math.round(
-                        progress * 100
-                    );
-
-
-                updateProgress(
-                    Math.max(
-                        10,
-                        Math.min(
-                            95,
-                            percent
-                        )
-                    )
-                );
-
-            }
-        );
-
-
-        ffmpeg.on(
-            "log",
-            function ({
-                message
-            }) {
-
-                console.log(
-                    "FFmpeg:",
-                    message
-                );
-
-            }
-        );
-
-
-        const baseURL =
-            "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
-
-
-        await ffmpeg.load({
-
-            coreURL:
-                baseURL +
-                "/ffmpeg-core.js",
-
-            wasmURL:
-                baseURL +
-                "/ffmpeg-core.wasm"
-
-        });
-
-
-        ffmpegLoaded =
-            true;
-
-
-        showStatus(
-            "Converter ready."
-        );
-
-
-    }
-
-    catch (error) {
-
-        console.error(error);
-
-
-        ffmpegLoaded =
-            false;
-
-
-        showStatus(
-            "The converter engine could not load."
-        );
-
-
-        throw error;
-
-    }
-
-    finally {
-
-        ffmpegLoading =
-            false;
-
-    }
+    return false;
+}
+```
 
 }
 
+// --------------------------------------------------
+// Conversion
+// --------------------------------------------------
 
-/* =========================
-   CONVERT
-========================= */
+convertBtn.addEventListener("click", async () => {
+if (!selectedFile) {
+setStatus("Please select an audio file first.", true);
+return;
+}
 
-convertButton.addEventListener(
-    "click",
-    convertAudio
-);
+```
+convertBtn.disabled = true;
 
+progressContainer.style.display = "block";
+progressBar.style.width = "0%";
+downloadArea.style.display = "none";
 
-async function convertAudio() {
+try {
+    const loaded = await loadFFmpeg();
 
-
-    if (!selectedFile) {
-
-        showStatus(
-            "Choose an audio file first."
-        );
-
-        return;
-
+    if (!loaded || !ffmpegLoaded) {
+        throw new Error("FFmpeg could not be loaded.");
     }
 
+    setStatus("Preparing your audio...");
 
-    convertButton.disabled =
-        true;
+    const inputExtension = getExtension(selectedFile.name);
+    const outputExtension = outputFormat.value;
 
+    const inputName = `input.${inputExtension}`;
+    const outputName = `evantine-converted.${outputExtension}`;
 
-    downloadArea.innerHTML =
-        "";
+    const fileData = new Uint8Array(
+        await selectedFile.arrayBuffer()
+    );
 
+    await ffmpeg.writeFile(inputName, fileData);
 
-    progressContainer.hidden =
-        false;
+    setStatus("Converting audio...");
+    progressBar.style.width = "10%";
 
+    const command = buildFFmpegCommand(
+        inputName,
+        outputName,
+        outputExtension
+    );
 
-    updateProgress(1);
+    console.log("FFmpeg command:", command);
 
+    const exitCode = await ffmpeg.exec(command);
 
+    if (exitCode !== 0) {
+        throw new Error(`FFmpeg conversion failed with code ${exitCode}`);
+    }
+
+    setStatus("Preparing download...");
+    progressBar.style.width = "90%";
+
+    const outputData = await ffmpeg.readFile(outputName);
+
+    const mimeType = getMimeType(outputExtension);
+
+    const blob = new Blob([outputData.buffer], {
+        type: mimeType
+    });
+
+    if (downloadURL) {
+        URL.revokeObjectURL(downloadURL);
+    }
+
+    downloadURL = URL.createObjectURL(blob);
+
+    downloadBtn.href = downloadURL;
+    downloadBtn.download = outputName;
+
+    downloadArea.style.display = "block";
+
+    progressBar.style.width = "100%";
+
+    setStatus("Conversion complete.");
+
+    // Clean up FFmpeg files
     try {
+        await ffmpeg.deleteFile(inputName);
+        await ffmpeg.deleteFile(outputName);
+    } catch (cleanupError) {
+        console.warn("Cleanup warning:", cleanupError);
+    }
 
+} catch (error) {
+    console.error("Conversion error:", error);
 
-        await loadFFmpeg();
+    progressBar.style.width = "0%";
 
+    setStatus(
+        "Conversion failed. Please try another audio file or format.",
+        true
+    );
 
-        progressText.textContent =
-            "Preparing audio";
+} finally {
+    convertBtn.disabled = false;
+}
+```
 
+});
 
-        updateProgress(10);
+// --------------------------------------------------
+// FFmpeg commands
+// --------------------------------------------------
 
+function buildFFmpegCommand(inputName, outputName, format) {
+const bitrate = quality.value;
 
-        const extension =
-            getFileExtension(
-                selectedFile.name
-            );
+```
+switch (format) {
 
-
-        const inputName =
-            "evantine_input_" +
-            Date.now() +
-            "." +
-            extension;
-
-
-        const format =
-            formatSelect.value;
-
-
-        const outputName =
-            "evantine_output_" +
-            Date.now() +
-            "." +
-            format;
-
-
-        const fileData =
-            new Uint8Array(
-                await selectedFile.arrayBuffer()
-            );
-
-
-        await ffmpeg.writeFile(
+    case "mp3":
+        return [
+            "-i",
             inputName,
-            fileData
-        );
+            "-vn",
+            "-codec:a",
+            "libmp3lame",
+            "-b:a",
+            `${bitrate}k`,
+            outputName
+        ];
 
+    case "wav":
+        return [
+            "-i",
+            inputName,
+            "-vn",
+            "-c:a",
+            "pcm_s16le",
+            outputName
+        ];
 
-        updateProgress(15);
+    case "flac":
+        return [
+            "-i",
+            inputName,
+            "-vn",
+            "-c:a",
+            "flac",
+            outputName
+        ];
 
+    case "ogg":
+        return [
+            "-i",
+            inputName,
+            "-vn",
+            "-c:a",
+            "libvorbis",
+            "-b:a",
+            `${bitrate}k`,
+            outputName
+        ];
 
-        progressText.textContent =
-            "Converting audio";
+    case "m4a":
+        return [
+            "-i",
+            inputName,
+            "-vn",
+            "-c:a",
+            "aac",
+            "-b:a",
+            `${bitrate}k`,
+            outputName
+        ];
 
+    case "aac":
+        return [
+            "-i",
+            inputName,
+            "-vn",
+            "-c:a",
+            "aac",
+            "-b:a",
+            `${bitrate}k`,
+            "-f",
+            "adts",
+            outputName
+        ];
 
-        const command =
-            buildFFmpegCommand(
-                inputName,
-                outputName,
-                format
-            );
+    case "opus":
+        return [
+            "-i",
+            inputName,
+            "-vn",
+            "-c:a",
+            "libopus",
+            "-b:a",
+            `${bitrate}k`,
+            outputName
+        ];
 
-
-        await ffmpeg.exec(
-            command
-        );
-
-
-        updateProgress(95);
-
-
-        progressText.textContent =
-            "Preparing download";
-
-
-        const outputData =
-            await ffmpeg.readFile(
-                outputName
-            );
-
-
-        const mimeType =
-            getMimeType(format);
-
-
-        const blob =
-            new Blob(
-                [outputData.buffer],
-                {
-                    type: mimeType
-                }
-            );
-
-
-        if (downloadURL) {
-
-            URL.revokeObjectURL(
-                downloadURL
-            );
-
-        }
-
-
-        downloadURL =
-            URL.createObjectURL(
-                blob
-            );
-
-
-        const originalName =
-            selectedFile.name
-                .replace(
-                    /\.[^/.]+$/,
-                    ""
-                );
-
-
-        const finalName =
-            originalName +
-            "." +
-            format;
-
-
-        createDownloadButton(
-            downloadURL,
-            finalName
-        );
-
-
-        updateProgress(100);
-
-
-        progressText.textContent =
-            "Complete";
-
-
-        showStatus(
-            "Your audio is ready."
-        );
-
-
-        try {
-
-            await ffmpeg.deleteFile(
-                inputName
-            );
-
-            await ffmpeg.deleteFile(
-                outputName
-            );
-
-        }
-
-        catch (cleanupError) {
-
-            console.warn(
-                "Cleanup warning:",
-                cleanupError
-            );
-
-        }
-
-
-    }
-
-    catch (error) {
-
-        console.error(
-            "Conversion error:",
-            error
-        );
-
-
-        progressContainer.hidden =
-            false;
-
-
-        progressText.textContent =
-            "Conversion failed";
-
-
-        showStatus(
-            "Conversion failed. Try a different file or format."
-        );
-
-    }
-
-    finally {
-
-        convertButton.disabled =
-            false;
-
-    }
+    default:
+        throw new Error("Unsupported output format.");
+}
+```
 
 }
 
-
-/* =========================
-   FFMPEG COMMANDS
-========================= */
-
-function buildFFmpegCommand(
-    input,
-    output,
-    format
-) {
-
-
-    const quality =
-        qualitySelect.value;
-
-
-    switch (format) {
-
-
-        case "mp3":
-
-            return [
-
-                "-i",
-                input,
-
-                "-vn",
-
-                "-c:a",
-                "libmp3lame",
-
-                "-b:a",
-                quality + "k",
-
-                output
-
-            ];
-
-
-        case "wav":
-
-            return [
-
-                "-i",
-                input,
-
-                "-vn",
-
-                "-c:a",
-                "pcm_s16le",
-
-                output
-
-            ];
-
-
-        case "flac":
-
-            return [
-
-                "-i",
-                input,
-
-                "-vn",
-
-                "-c:a",
-                "flac",
-
-                output
-
-            ];
-
-
-        case "ogg":
-
-            return [
-
-                "-i",
-                input,
-
-                "-vn",
-
-                "-c:a",
-                "libvorbis",
-
-                "-b:a",
-                quality + "k",
-
-                output
-
-            ];
-
-
-        case "m4a":
-
-            return [
-
-                "-i",
-                input,
-
-                "-vn",
-
-                "-c:a",
-                "aac",
-
-                "-b:a",
-                quality + "k",
-
-                output
-
-            ];
-
-
-        case "aac":
-
-            return [
-
-                "-i",
-                input,
-
-                "-vn",
-
-                "-c:a",
-                "aac",
-
-                "-b:a",
-                quality + "k",
-
-                "-f",
-                "adts",
-
-                output
-
-            ];
-
-
-        case "opus":
-
-            return [
-
-                "-i",
-                input,
-
-                "-vn",
-
-                "-c:a",
-                "libopus",
-
-                "-b:a",
-                quality + "k",
-
-                output
-
-            ];
-
-
-        default:
-
-            throw new Error(
-                "Unsupported format."
-            );
-
-    }
-
+// --------------------------------------------------
+// Helpers
+// --------------------------------------------------
+
+function getExtension(filename) {
+const parts = filename.split(".");
+
+```
+if (parts.length < 2) {
+    return "audio";
 }
 
-
-/* =========================
-   DOWNLOAD BUTTON
-========================= */
-
-function createDownloadButton(
-    url,
-    filename
-) {
-
-
-    const link =
-        document.createElement(
-            "a"
-        );
-
-
-    link.href =
-        url;
-
-
-    link.download =
-        filename;
-
-
-    link.className =
-        "download-button";
-
-
-    link.textContent =
-        "Download " +
-        filename;
-
-
-    downloadArea.appendChild(
-        link
-    );
+return parts.pop().toLowerCase();
+```
 
 }
-
-
-/* =========================
-   MIME TYPES
-========================= */
 
 function getMimeType(format) {
+switch (format) {
+case "mp3":
+return "audio/mpeg";
 
+```
+    case "wav":
+        return "audio/wav";
 
-    const types = {
+    case "flac":
+        return "audio/flac";
 
-        mp3:
-            "audio/mpeg",
+    case "ogg":
+        return "audio/ogg";
 
-        wav:
-            "audio/wav",
+    case "m4a":
+        return "audio/mp4";
 
-        flac:
-            "audio/flac",
+    case "aac":
+        return "audio/aac";
 
-        ogg:
-            "audio/ogg",
+    case "opus":
+        return "audio/opus";
 
-        m4a:
-            "audio/mp4",
-
-        aac:
-            "audio/aac",
-
-        opus:
-            "audio/opus"
-
-    };
-
-
-    return (
-        types[format] ||
-        "application/octet-stream"
-    );
+    default:
+        return "application/octet-stream";
+}
+```
 
 }
 
+function formatFileSize(bytes) {
+if (bytes === 0) {
+return "0 Bytes";
+}
 
-/* =========================
-   FILE HELPERS
-========================= */
+```
+const units = [
+    "Bytes",
+    "KB",
+    "MB",
+    "GB"
+];
 
-function getFileExtension(
-    filename
-) {
+const index = Math.floor(
+    Math.log(bytes) / Math.log(1024)
+);
 
-
-    const match =
-        filename.match(
-            /\.([^.]+)$/
-        );
-
-
-    if (!match) {
-
-        return "audio";
-
-    }
-
-
-    return match[1]
-        .toLowerCase();
+return `${(bytes / Math.pow(1024, index)).toFixed(2)} ${units[index]}`;
+```
 
 }
 
+function formatDuration(seconds) {
+const minutes = Math.floor(seconds / 60);
+const remainingSeconds = Math.floor(seconds % 60);
 
-function isSupportedAudio(
-    filename
-) {
-
-
-    const extension =
-        getFileExtension(
-            filename
-        );
-
-
-    const supported = [
-
-        "mp3",
-        "wav",
-        "flac",
-        "ogg",
-        "m4a",
-        "aac",
-        "opus",
-        "wma",
-        "aiff",
-        "aif",
-        "webm"
-
-    ];
-
-
-    return supported.includes(
-        extension
-    );
+```
+return `${minutes}:${remainingSeconds
+    .toString()
+    .padStart(2, "0")}`;
+```
 
 }
 
+function setStatus(message, isError = false) {
+if (!statusText) {
+return;
+}
 
-function formatFileSize(
-    bytes
-) {
+```
+statusText.textContent = message;
 
-
-    if (bytes === 0) {
-
-        return "0 Bytes";
-
-    }
-
-
-    const units = [
-
-        "Bytes",
-        "KB",
-        "MB",
-        "GB"
-
-    ];
-
-
-    const index =
-        Math.floor(
-            Math.log(bytes) /
-            Math.log(1024)
-        );
-
-
-    return (
-
-        parseFloat(
-
-            (
-                bytes /
-                Math.pow(
-                    1024,
-                    index
-                )
-            ).toFixed(2)
-
-        )
-
-        +
-
-        " " +
-
-        units[index]
-
-    );
+if (isError) {
+    statusText.classList.add("error");
+} else {
+    statusText.classList.remove("error");
+}
+```
 
 }
 
-
-function formatDuration(
-    seconds
-) {
-
-
-    if (
-        !Number.isFinite(
-            seconds
-        )
-    ) {
-
-        return "0:00";
-
-    }
-
-
-    const minutes =
-        Math.floor(
-            seconds / 60
-        );
-
-
-    const remainingSeconds =
-        Math.floor(
-            seconds % 60
-        );
-
-
-    return (
-
-        minutes +
-        ":" +
-        String(
-            remainingSeconds
-        ).padStart(
-            2,
-            "0"
-        )
-
-    );
-
-}
-
-
-/* =========================
-   PROGRESS
-========================= */
-
-function updateProgress(
-    percent
-) {
-
-
-    percent =
-        Math.max(
-            0,
-            Math.min(
-                100,
-                percent
-            )
-        );
-
-
-    progressFill.style.width =
-        percent + "%";
-
-
-    progressPercent.textContent =
-        percent + "%";
-
-}
-
-
-/* =========================
-   STATUS
-========================= */
-
-function showStatus(
-    message
-) {
-
-    status.textContent =
-        message;
-
-}
-
-
-/* =========================
-   WAIT
-========================= */
-
-function wait(
-    milliseconds
-) {
-
-    return new Promise(
-        function (resolve) {
-
-            setTimeout(
-                resolve,
-                milliseconds
-            );
-
-        }
-    );
-
-}
-
-
-/* =========================
-   INITIAL STATE
-========================= */
-
-updateQualitySetting();
+// Initial state
+progressContainer.style.display = "none";
+fileInfo.style.display = "none";
+audioPreview.style.display = "none";
+removeFileBtn.style.display = "none";
+downloadArea.style.display = "none";
