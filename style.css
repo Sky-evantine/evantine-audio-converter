@@ -299,6 +299,19 @@ input[type="file"] {
     cursor: pointer;
 }
 
+.drop-hint {
+    margin: 10px 0 0;
+    color: #666;
+    text-align: center;
+    font-size: 12px;
+    letter-spacing: .2px;
+    transition: color .25s ease;
+}
+
+.converter.is-dragging .drop-hint {
+    color: #fff;
+}
+
 .choose-button:hover,
 #convertButton:hover:not(:disabled),
 .download-button:hover,
