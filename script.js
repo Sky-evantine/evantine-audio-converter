@@ -1,5 +1,3 @@
-const FFmpegConstructor = window.FFmpegWASM?.FFmpeg;
-
 const fileInput = document.getElementById("fileInput");
 const fileName = document.getElementById("fileName");
 const format = document.getElementById("format");
@@ -76,8 +74,20 @@ function revokeDownloadUrl() {
     }
 }
 
+async function waitForFFmpegLibrary(timeout = 10000) {
+    const started = Date.now();
+
+    while (Date.now() - started < timeout) {
+        const Constructor = window.FFmpegWASM?.FFmpeg;
+        if (Constructor) return Constructor;
+        await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+
+    throw new Error("FFmpeg library did not load. Please refresh the page and try again.");
+}
+
 async function toBlobURL(url, mimeType) {
-    const response = await fetch(url);
+    const response = await fetch(url, { cache: "no-store" });
     if (!response.ok) {
         throw new Error(`Could not load FFmpeg resource (${response.status}).`);
     }
@@ -88,13 +98,10 @@ async function toBlobURL(url, mimeType) {
 async function loadFFmpeg() {
     if (ffmpegLoaded) return;
 
-    if (!FFmpegConstructor) {
-        throw new Error("FFmpeg failed to initialize. Refresh the page and try again.");
-    }
-
     setStatus("Loading converter... The first load can take a moment.");
     setProgress(0);
 
+    const FFmpegConstructor = await waitForFFmpegLibrary();
     ffmpeg = new FFmpegConstructor();
 
     ffmpeg.on("progress", ({ progress }) => {
@@ -107,18 +114,25 @@ async function loadFFmpeg() {
     });
 
     const baseURL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
-    const [coreURL, wasmURL] = await Promise.all([
-        toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
-        toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm")
-    ]);
+    let coreURL = null;
+    let wasmURL = null;
 
     try {
+        [coreURL, wasmURL] = await Promise.all([
+            toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
+            toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm")
+        ]);
+
         await ffmpeg.load({ coreURL, wasmURL });
         ffmpegLoaded = true;
         setStatus("Converter ready.");
+    } catch (error) {
+        ffmpeg = null;
+        const message = error instanceof Error ? error.message : String(error);
+        throw new Error(`FFmpeg could not start: ${message}`);
     } finally {
-        URL.revokeObjectURL(coreURL);
-        URL.revokeObjectURL(wasmURL);
+        if (coreURL) URL.revokeObjectURL(coreURL);
+        if (wasmURL) URL.revokeObjectURL(wasmURL);
     }
 }
 
