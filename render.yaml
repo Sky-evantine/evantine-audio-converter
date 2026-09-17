@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: evantine-youtube-downloader
+    runtime: docker
+    dockerfilePath: ./server/Dockerfile
+    dockerContext: ./server
+    healthCheckPath: /health
+    envVars:
+      - key: ALLOWED_ORIGINS
+        sync: false
