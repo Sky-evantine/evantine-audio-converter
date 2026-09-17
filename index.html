@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Evantine fast MP3 and WAV converter.">
+    <meta name="description" content="Evantine fast MP3 and WAV converter with an optional YouTube downloader backend.">
     <title>Evantine Audio Converter</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -44,10 +44,18 @@
             <hr>
 
             <div class="youtube-box">
-                <h2>YouTube</h2>
-                <p>Paste a YouTube link to open the video. Direct YouTube downloading requires a server because YouTube does not expose downloadable media to a static browser page.</p>
+                <h2>YouTube Downloader</h2>
+                <p>Use this for videos you are authorized to download. The downloader runs through a separate server because a GitHub Pages site cannot run the required media downloader directly.</p>
                 <input id="youtubeUrl" type="url" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
-                <button id="youtubeButton" type="button">Open YouTube</button>
+                <div class="settings">
+                    <label for="youtubeFormat">Download as</label>
+                    <select id="youtubeFormat">
+                        <option value="mp4">MP4 Video</option>
+                        <option value="mp3">MP3 Audio</option>
+                    </select>
+                    <button id="youtubeButton" type="button">Download</button>
+                </div>
+                <p id="youtubeStatus" class="file-name" aria-live="polite"></p>
             </div>
         </section>
     </main>
