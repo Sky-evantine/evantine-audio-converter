@@ -27,14 +27,13 @@ jobs:
           test -f script.js
           test -f style.css
 
-      - name: Check required converter hooks
+      - name: Check converter hooks
         run: |
-          grep -q 'FFmpegWASM' script.js
-          grep -q 'ffmpeg.load' script.js
-          grep -q 'ffmpeg.writeFile' script.js
-          grep -q 'ffmpeg.exec' script.js
-          grep -q 'ffmpeg.readFile' script.js
-          grep -q 'accept="\*/\*"' index.html
+          grep -q 'createMp3Encoder' script.js
+          grep -q 'audioBufferToWav' script.js
+          grep -q 'decodeAudio' script.js
+          grep -q 'Download' script.js
+          grep -q 'youtubeButton' script.js
 
   browser-smoke:
     runs-on: ubuntu-latest
