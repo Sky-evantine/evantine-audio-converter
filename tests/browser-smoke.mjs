@@ -38,15 +38,23 @@ function makeWav(seconds = 0.25, sampleRate = 8000) {
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage();
 const errors = [];
-page.on("pageerror", (error) => errors.push(error.message));
+page.on("pageerror", (error) => errors.push(`pageerror: ${error.message}`));
 page.on("console", (message) => {
-  if (message.type() === "error") errors.push(message.text());
+  if (message.type() === "error") errors.push(`console: ${message.text()}`);
 });
 
 try {
   await page.goto(`http://127.0.0.1:${port}/`, { waitUntil: "networkidle", timeout: 120000 });
+  await page.waitForTimeout(500);
 
-  await page.waitForFunction(() => Boolean(window.FFmpegWASM?.FFmpeg), null, { timeout: 30000 });
+  const libraryState = await page.evaluate(() => ({
+    hasGlobal: Boolean(window.FFmpegWASM),
+    hasConstructor: Boolean(window.FFmpegWASM?.FFmpeg)
+  }));
+
+  if (!libraryState.hasConstructor) {
+    throw new Error(`FFmpeg UMD did not initialize: ${JSON.stringify(libraryState)}${errors.length ? `; ${errors.join(" | ")}` : ""}`);
+  }
 
   const wav = makeWav();
   await page.locator("#fileInput").setInputFiles({
