@@ -17,8 +17,9 @@ let selectedFile = null;
 let downloadUrl = null;
 let mp3EncoderPromise = null;
 const MP3_BITRATE = 192;
-const ENCODE_BLOCK_SIZE = 32768;
+const ENCODE_BLOCK_SIZE = 65536;
 const MAX_FILE_SIZE = 250 * 1024 * 1024;
+const YIELD_INTERVAL_MS = 32;
 
 function setStatus(message) { status.textContent = message; }
 function setProgress(value) { progressBar.style.width = `${Math.max(0, Math.min(100, Math.round(value * 100)))}%`; }
@@ -73,6 +74,16 @@ async function getMp3Encoder() {
     return mp3EncoderPromise;
 }
 
+async function yieldToBrowser() {
+    await new Promise(resolve => {
+        if ("requestIdleCallback" in window) {
+            window.requestIdleCallback(resolve, { timeout: YIELD_INTERVAL_MS });
+        } else {
+            setTimeout(resolve, 0);
+        }
+    });
+}
+
 async function decodeAudio(file) {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextClass) throw new Error("This browser cannot decode audio files.");
@@ -107,7 +118,7 @@ async function audioBufferToWav(buffer) {
             const progress = (frame + 1) / frames;
             setProgress(progress * 0.95);
             setStatus("Building WAV... " + Math.round(progress * 100) + "%");
-            await new Promise(resolve => requestAnimationFrame(resolve));
+            await yieldToBrowser();
         }
     }
     return new Blob([output], { type: "audio/wav" });
@@ -128,7 +139,7 @@ async function convertToMp3(buffer) {
         const progress = end / buffer.length;
         setProgress(progress * 0.95);
         setStatus("Converting to MP3... " + Math.round(progress * 100) + "%");
-        await new Promise(resolve => requestAnimationFrame(resolve));
+        await yieldToBrowser();
     }
 
     const finalChunk = encoder.finalize();
