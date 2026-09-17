@@ -21,19 +21,28 @@ jobs:
       - name: Check JavaScript syntax
         run: node --check script.js
 
+      - name: Check Python backend syntax
+        run: python3 -m py_compile server/main.py
+
       - name: Check required files
         run: |
           test -f index.html
           test -f script.js
           test -f style.css
+          test -f server/main.py
+          test -f server/Dockerfile
+          test -f server/requirements.txt
+          test -f render.yaml
 
-      - name: Check converter hooks
+      - name: Check converter and downloader hooks
         run: |
           grep -q 'createMp3Encoder' script.js
           grep -q 'audioBufferToWav' script.js
           grep -q 'decodeAudio' script.js
-          grep -q 'Download' script.js
           grep -q 'youtubeButton' script.js
+          grep -q '/api/youtube' script.js
+          grep -q 'yt_dlp' server/main.py
+          grep -q '/health' server/main.py
 
   browser-smoke:
     runs-on: ubuntu-latest
