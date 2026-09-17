@@ -1,0 +1,37 @@
+name: Converter checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check JavaScript syntax
+        run: node --check script.js
+
+      - name: Check required files
+        run: |
+          test -f index.html
+          test -f script.js
+          test -f style.css
+
+      - name: Check required converter hooks
+        run: |
+          grep -q 'FFmpegWASM' script.js
+          grep -q 'ffmpeg.load' script.js
+          grep -q 'ffmpeg.writeFile' script.js
+          grep -q 'ffmpeg.exec' script.js
+          grep -q 'ffmpeg.readFile' script.js
+          grep -q 'accept="\*/\*"' index.html
