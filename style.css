@@ -6,24 +6,30 @@
     color-scheme: dark;
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
 body {
     margin: 0;
     font-family: Arial, Helvetica, sans-serif;
     background: #0b0b0f;
     color: #fff;
     min-height: 100vh;
+    overflow-x: hidden;
 }
 
 header {
     text-align: center;
     padding: 56px 20px 24px;
+    animation: fade-up 0.7s cubic-bezier(.22, 1, .36, 1) both;
 }
 
 .eyebrow {
     margin: 0 0 8px;
     letter-spacing: 7px;
     font-weight: 800;
-    color: #fff;
+    animation: soft-glow 3s ease-in-out 0.7s infinite alternate;
 }
 
 header h1 {
@@ -52,6 +58,13 @@ main {
     border-radius: 20px;
     padding: clamp(24px, 6vw, 42px);
     box-shadow: 0 18px 60px rgba(0, 0, 0, 0.28);
+    animation: card-in 0.8s cubic-bezier(.22, 1, .36, 1) 0.08s both;
+    transition: border-color 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease;
+}
+
+.converter:focus-within {
+    border-color: #3a3a47;
+    box-shadow: 0 22px 70px rgba(0, 0, 0, 0.34);
 }
 
 .converter h2 {
@@ -78,7 +91,8 @@ input[type="file"] {
 
 .choose-button,
 #convertButton,
-.download-button {
+.download-button,
+#youtubeButton {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -87,7 +101,7 @@ input[type="file"] {
     border-radius: 10px;
     font-weight: 800;
     text-decoration: none;
-    transition: opacity 0.15s ease, transform 0.15s ease;
+    transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .choose-button {
@@ -99,15 +113,26 @@ input[type="file"] {
 
 .choose-button:hover,
 #convertButton:hover:not(:disabled),
-.download-button:hover {
-    opacity: 0.85;
-    transform: translateY(-1px);
+.download-button:hover,
+#youtubeButton:hover:not(:disabled) {
+    opacity: 0.88;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(255, 255, 255, 0.08);
+}
+
+.choose-button:active,
+#convertButton:active:not(:disabled),
+.download-button:active,
+#youtubeButton:active:not(:disabled) {
+    transform: translateY(0) scale(0.985);
 }
 
 .choose-button:focus-visible,
 #convertButton:focus-visible,
 .download-button:focus-visible,
-select:focus-visible {
+#youtubeButton:focus-visible,
+select:focus-visible,
+#youtubeUrl:focus-visible {
     outline: 2px solid #fff;
     outline-offset: 3px;
 }
@@ -118,6 +143,11 @@ select:focus-visible {
     color: #ddd;
     text-align: center;
     overflow-wrap: anywhere;
+    transition: color 0.25s ease, opacity 0.25s ease, transform 0.25s ease;
+}
+
+.file-name.file-selected {
+    animation: file-selected 0.45s cubic-bezier(.22, 1, .36, 1) both;
 }
 
 .settings {
@@ -130,7 +160,8 @@ select:focus-visible {
     font-weight: 800;
 }
 
-select {
+select,
+#youtubeUrl {
     width: 100%;
     padding: 14px;
     background: #0b0b0f;
@@ -138,6 +169,20 @@ select {
     border: 1px solid #33333d;
     border-radius: 9px;
     font-size: 16px;
+    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+select:hover,
+#youtubeUrl:hover {
+    border-color: #454550;
+}
+
+select:focus,
+#youtubeUrl:focus {
+    border-color: #666673;
+    background: #0e0e13;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.04);
+    outline: none;
 }
 
 #convertButton {
@@ -150,10 +195,16 @@ select {
     cursor: pointer;
 }
 
-#convertButton:disabled {
+#convertButton:disabled,
+#youtubeButton:disabled {
     opacity: 0.45;
     cursor: not-allowed;
     transform: none;
+    box-shadow: none;
+}
+
+body.is-converting #convertButton {
+    animation: button-pulse 1.4s ease-in-out infinite;
 }
 
 .progress-wrap {
@@ -169,19 +220,37 @@ select {
 }
 
 .progress-bar {
+    position: relative;
     width: 0%;
     height: 100%;
     border-radius: inherit;
     background: #fff;
     transition: width 0.15s ease;
+    overflow: hidden;
 }
 
-#status {
+body.is-converting .progress-bar::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+    transform: translateX(-100%);
+    animation: progress-shimmer 1.2s linear infinite;
+}
+
+#status,
+#youtubeStatus {
     min-height: 24px;
     margin: 12px 0 0;
     color: #aaa;
     text-align: center;
     overflow-wrap: anywhere;
+    transition: color 0.25s ease, opacity 0.25s ease;
+}
+
+.status-done {
+    animation: status-pop 0.45s cubic-bezier(.22, 1, .36, 1) both;
+    color: #fff !important;
 }
 
 #downloadArea {
@@ -192,6 +261,40 @@ select {
     margin-top: 20px;
     background: #fff;
     color: #000;
+    animation: download-in 0.5s cubic-bezier(.22, 1, .36, 1) both;
+}
+
+hr {
+    margin: 34px 0;
+    border: 0;
+    border-top: 1px solid #292933;
+    opacity: 0.8;
+}
+
+.youtube-box {
+    animation: fade-up 0.65s cubic-bezier(.22, 1, .36, 1) 0.25s both;
+}
+
+.youtube-box h2 {
+    font-size: 24px;
+}
+
+.youtube-box > p {
+    color: #aaa;
+    line-height: 1.5;
+}
+
+.youtube-box .settings {
+    margin-top: 16px;
+}
+
+#youtubeButton {
+    width: 100%;
+    border: 0;
+    background: #fff;
+    color: #000;
+    font-size: 16px;
+    cursor: pointer;
 }
 
 .note {
@@ -206,6 +309,100 @@ footer {
     padding: 30px 20px;
     color: #666;
     text-align: center;
+    animation: fade-up 0.6s ease 0.35s both;
+}
+
+@keyframes fade-up {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes card-in {
+    from {
+        opacity: 0;
+        transform: translateY(18px) scale(0.985);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes file-selected {
+    0% {
+        opacity: 0.35;
+        transform: translateY(4px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes download-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes status-pop {
+    0% {
+        opacity: 0.4;
+        transform: translateY(3px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes button-pulse {
+    0%, 100% {
+        opacity: 0.62;
+    }
+    50% {
+        opacity: 0.82;
+    }
+}
+
+@keyframes progress-shimmer {
+    to {
+        transform: translateX(100%);
+    }
+}
+
+@keyframes soft-glow {
+    from {
+        opacity: 0.78;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }
 
 @media (max-width: 480px) {
