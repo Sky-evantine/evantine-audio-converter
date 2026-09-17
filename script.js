@@ -135,33 +135,6 @@ async function convertToMp3(buffer) {
     return new Blob(chunks, { type: "audio/mpeg" });
 }
 
-const hubCarousel = document.getElementById("evantineHubs");
-if (hubCarousel && window.Splide) {
-    new Splide(hubCarousel, {
-        type: "loop",
-        perPage: 1,
-        perMove: 1,
-        gap: "18px",
-        speed: 650,
-        drag: "free",
-        snap: true,
-        arrows: true,
-        pagination: true,
-        wheel: true,
-        wheelSleep: 700,
-        keyboard: "global",
-        pauseOnHover: true,
-        pauseOnFocus: true,
-        breakpoints: {
-            600: {
-                gap: "12px",
-                arrows: false,
-                wheel: false
-            }
-        }
-    }).mount();
-}
-
 const hubTrack = document.getElementById("hubTrack");
 const hubPrev = document.getElementById("hubPrev");
 const hubNext = document.getElementById("hubNext");
