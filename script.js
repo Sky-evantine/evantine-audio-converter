@@ -192,7 +192,7 @@ if (ffmpegLoading) {
 ffmpegLoading = true;
 
 try {
-    setStatus("Loading audio converter...");
+    setStatus("Loading audio converter");
 
     const { toBlobURL } = window.FFmpegUtil;
 
@@ -271,7 +271,7 @@ try {
         throw new Error("FFmpeg could not be loaded.");
     }
 
-    setStatus("Preparing your audio...");
+    setStatus("Preparing your audio");
 
     const inputExtension = getExtension(selectedFile.name);
     const outputExtension = outputFormat.value;
@@ -285,7 +285,7 @@ try {
 
     await ffmpeg.writeFile(inputName, fileData);
 
-    setStatus("Converting audio...");
+    setStatus("Converting audio");
     progressBar.style.width = "10%";
 
     const command = buildFFmpegCommand(
@@ -302,7 +302,7 @@ try {
         throw new Error(`FFmpeg conversion failed with code ${exitCode}`);
     }
 
-    setStatus("Preparing download...");
+    setStatus("Preparing download");
     progressBar.style.width = "90%";
 
     const outputData = await ffmpeg.readFile(outputName);
