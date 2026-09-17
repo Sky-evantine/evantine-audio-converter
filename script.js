@@ -6,7 +6,12 @@ const status = document.getElementById("status");
 const progressBar = document.getElementById("progressBar");
 const downloadArea = document.getElementById("downloadArea");
 const youtubeUrl = document.getElementById("youtubeUrl");
+const youtubeFormat = document.getElementById("youtubeFormat");
 const youtubeButton = document.getElementById("youtubeButton");
+const youtubeStatus = document.getElementById("youtubeStatus");
+
+// Set this to your deployed server URL when the backend is deployed.
+const YOUTUBE_API_BASE = window.EVANTINE_YOUTUBE_API || "https://evantine-youtube-downloader.onrender.com";
 
 let selectedFile = null;
 let downloadUrl = null;
@@ -147,13 +152,58 @@ convertButton.addEventListener("click", async () => {
     } finally { convertButton.disabled = false; }
 });
 
-youtubeButton.addEventListener("click", () => {
-    const value = youtubeUrl.value.trim();
+function isYouTubeUrl(value) {
     try {
         const url = new URL(value);
-        if (!/(^|\.)youtube\.com$|(^|\.)youtu\.be$/.test(url.hostname)) throw new Error();
-        window.open(url.href, "_blank", "noopener,noreferrer");
+        return /(^|\.)youtube\.com$|(^|\.)youtu\.be$/.test(url.hostname);
     } catch {
-        setStatus("Please enter a valid YouTube URL.");
+        return false;
+    }
+}
+
+youtubeButton.addEventListener("click", async () => {
+    const value = youtubeUrl.value.trim();
+    const outputFormat = youtubeFormat.value;
+
+    if (!isYouTubeUrl(value)) {
+        youtubeStatus.textContent = "Please enter a valid YouTube URL.";
+        return;
+    }
+
+    youtubeButton.disabled = true;
+    youtubeStatus.textContent = `Preparing ${outputFormat.toUpperCase()} download...`;
+
+    try {
+        const endpoint = new URL("/api/youtube", YOUTUBE_API_BASE);
+        endpoint.searchParams.set("url", value);
+        endpoint.searchParams.set("format", outputFormat);
+
+        const response = await fetch(endpoint.href);
+        if (!response.ok) {
+            let message = `Server returned ${response.status}.`;
+            try {
+                const payload = await response.json();
+                if (payload.detail) message = payload.detail;
+            } catch {}
+            throw new Error(message);
+        }
+
+        const blob = await response.blob();
+        if (!blob.size) throw new Error("The downloader returned an empty file.");
+
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = objectUrl;
+        link.download = `evantine-youtube.${outputFormat}`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+        youtubeStatus.textContent = `Done. Your ${outputFormat.toUpperCase()} download should start now.`;
+    } catch (error) {
+        console.error("Evantine YouTube error:", error);
+        youtubeStatus.textContent = `Download failed: ${error instanceof Error ? error.message : String(error)}`;
+    } finally {
+        youtubeButton.disabled = false;
     }
 });
