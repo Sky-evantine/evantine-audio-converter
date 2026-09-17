@@ -16,6 +16,8 @@ const YOUTUBE_API_BASE = window.EVANTINE_YOUTUBE_API || "https://evantine-youtub
 let selectedFile = null;
 let downloadUrl = null;
 let mp3EncoderPromise = null;
+const MP3_BITRATE = 192;
+const ENCODE_BLOCK_SIZE = 32768;
 
 function setStatus(message) { status.textContent = message; }
 function setProgress(value) { progressBar.style.width = `${Math.max(0, Math.min(100, Math.round(value * 100)))}%`; }
@@ -64,7 +66,7 @@ async function getMp3Encoder() {
                 await loadScript("https://unpkg.com/wasm-media-encoders@0.7.0/dist/umd/WasmMediaEncoder.min.js");
             }
             if (!window.WasmMediaEncoder?.createMp3Encoder) throw new Error("Fast MP3 engine is unavailable.");
-            return window.WasmMediaEncoder;
+            return window.WasmMediaEncoder.createMp3Encoder();
         })().catch(error => { mp3EncoderPromise = null; throw error; });
     }
     return mp3EncoderPromise;
@@ -105,23 +107,21 @@ function audioBufferToWav(buffer) {
 }
 
 async function convertToMp3(buffer) {
-    const library = await getMp3Encoder();
+    const encoder = await getMp3Encoder();
     const channels = Math.min(2, buffer.numberOfChannels);
     const data = Array.from({ length: channels }, (_, i) => buffer.getChannelData(i));
-    if (channels === 1) data.push(data[0]);
+    encoder.configure({ sampleRate: buffer.sampleRate, channels, bitrate: MP3_BITRATE });
 
-    const encoder = await library.createMp3Encoder();
-    encoder.configure({ sampleRate: buffer.sampleRate, channels, bitrate: 192 });
     const chunks = [];
-    const blockSize = 65536;
-
-    for (let offset = 0; offset < buffer.length; offset += blockSize) {
-        const end = Math.min(offset + blockSize, buffer.length);
-        const encoded = encoder.encode([data[0].subarray(offset, end), data[1].subarray(offset, end)]);
+    for (let offset = 0; offset < buffer.length; offset += ENCODE_BLOCK_SIZE) {
+        const end = Math.min(offset + ENCODE_BLOCK_SIZE, buffer.length);
+        const samples = data.map(channel => channel.subarray(offset, end));
+        const encoded = encoder.encode(samples);
         if (encoded.length) chunks.push(new Uint8Array(encoded));
-        setProgress((end / buffer.length) * 0.95);
-        setStatus(`Converting to MP3... ${Math.round((end / buffer.length) * 100)}%`);
-        await new Promise(resolve => setTimeout(resolve, 0));
+        const progress = end / buffer.length;
+        setProgress(progress * 0.95);
+        setStatus("Converting to MP3... " + Math.round(progress * 100) + "%");
+        await new Promise(resolve => requestAnimationFrame(resolve));
     }
 
     const finalChunk = encoder.finalize();
@@ -154,6 +154,9 @@ convertButton.addEventListener("click", async () => {
     try {
         const outputFormat = format.value;
         const inputFormat = selectedFile.name.split(".").pop()?.toLowerCase();
+        if (!["mp3", "wav"].includes(inputFormat)) {
+            throw new Error("Please choose an MP3 or WAV file.");
+        }
         if (inputFormat === outputFormat) {
             makeDownload(new Blob([await selectedFile.arrayBuffer()], { type: outputFormat === "mp3" ? "audio/mpeg" : "audio/wav" }), outputFormat);
             setProgress(1); setStatus(`Already ${outputFormat.toUpperCase()}. Ready to download.`); showDone(status); return;
