@@ -19,6 +19,7 @@
       "offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}
     }
     </script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.3/dist/css/splide.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -28,9 +29,12 @@
         <p>Fast, simple audio conversion in your browser.</p>
     </header>
 
-    <main class="hub-deck" id="hubDeck" aria-label="Evantine tools">
-        <div class="hub-track" id="hubTrack">
-        <section class="hub converter" aria-labelledby="converter-title">
+    <main class="hub-deck" aria-label="Evantine tools">
+        <section class="splide" id="evantineHubs" aria-label="Evantine tool hubs">
+            <div class="splide__track">
+                <div class="splide__list">
+        
+        <section class="hub splide__slide converter" aria-labelledby="converter-title">
             <h2 id="converter-title">Convert audio</h2>
             <p class="intro">Choose an audio file, pick MP3 or WAV, and convert.</p>
 
@@ -54,14 +58,14 @@
             <div id="downloadArea"></div>
         </section>
 
-        <section class="hub seo-links" aria-labelledby="formats-title">
+        <section class="hub splide__slide seo-links" aria-labelledby="formats-title">
             <h2 id="formats-title">Popular audio conversions</h2>
             <p><a href="/mp3-to-wav.html">MP3 to WAV converter</a> · <a href="/wav-to-mp3.html">WAV to MP3 converter</a> · <a href="/m4a-to-mp3.html">M4A to MP3 converter</a> · <a href="/flac-to-mp3.html">FLAC to MP3 converter</a> · <a href="/ogg-to-mp3.html">OGG to MP3 converter</a> · <a href="/aac-to-mp3.html">AAC to MP3 converter</a></p>
             <h2>Free audio conversion online</h2>
             <p>Evantine makes simple audio conversion available directly in your browser. No desktop software is required for the basic converter. Choose a file, select an output format, and download your converted audio.</p>
         </section>
 
-        <section class="hub youtube-box">
+        <section class="hub splide__slide youtube-box">
             <h2>YouTube Downloader</h2>
             <p>Use this for videos you are authorized to download. The downloader runs through a separate server because a GitHub Pages site cannot run the required media downloader directly.</p>
             <input id="youtubeUrl" type="url" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
@@ -72,7 +76,7 @@
             </div>
             <p id="youtubeStatus" class="file-name" aria-live="polite"></p>
         </section>
-        <section class="hub about-hub" aria-labelledby="about-title">
+        <section class="hub splide__slide about-hub" aria-labelledby="about-title">
             <p class="hub-kicker">EVANTINE TOOLS</p>
             <h2 id="about-title">Simple tools. No clutter.</h2>
             <p>Convert your audio directly in your browser, or use the downloader when you have permission to save a YouTube video.</p>
@@ -81,16 +85,14 @@
                 <a class="hub-action" href="/wav-to-mp3.html">WAV → MP3</a>
             </div>
         </section>
-        </div>
-        <div class="hub-nav" aria-label="Tool sections">
-            <button class="hub-arrow" id="hubPrev" type="button" aria-label="Previous section">‹</button>
-            <div class="hub-dots" id="hubDots"></div>
-            <button class="hub-arrow" id="hubNext" type="button" aria-label="Next section">›</button>
-        </div>
-        <p class="swipe-hint">Drag or swipe to shuffle through tools</p>
+                </div>
+            </div>
+        </section>
+        <p class="swipe-hint">Drag, swipe, or use the arrows to shuffle through tools</p>
     </main>
 
     <footer><p>© 2026 Evantine</p></footer>
-    <script src="script.js?v=20260917-3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.3/dist/js/splide.min.js"></script>
+    <script src="script.js?v=20260917-4"></script>
 </body>
 </html>
