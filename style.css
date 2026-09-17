@@ -242,18 +242,6 @@ header > p:last-child {
     box-shadow: 0 22px 70px rgba(0, 0, 0, 0.34);
 }
 
-.converter.is-dragging {
-    border-color: rgba(255, 255, 255, .72);
-    box-shadow:
-        0 24px 80px rgba(0, 0, 0, .42),
-        0 0 0 4px rgba(255, 255, 255, .06);
-    transform: translateY(-2px) scale(1.008);
-}
-
-.converter.is-dragging .choose-button {
-    background: #f2f2f2;
-    box-shadow: 0 10px 32px rgba(255, 255, 255, .12);
-}
 
 .converter h2 {
     margin: 0;
@@ -299,18 +287,6 @@ input[type="file"] {
     cursor: pointer;
 }
 
-.drop-hint {
-    margin: 10px 0 0;
-    color: #666;
-    text-align: center;
-    font-size: 12px;
-    letter-spacing: .2px;
-    transition: color .25s ease;
-}
-
-.converter.is-dragging .drop-hint {
-    color: #fff;
-}
 
 .choose-button:hover,
 #convertButton:hover:not(:disabled),
