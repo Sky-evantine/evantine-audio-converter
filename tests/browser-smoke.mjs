@@ -35,6 +35,11 @@ try {
     await page.goto(`http://127.0.0.1:${port}/`, { waitUntil: "networkidle", timeout: 120000 });
     await page.locator("#fileInput").setInputFiles({ name: "smoke-test.wav", mimeType: "audio/wav", buffer: makeWav() });
 
+    await page.locator("#fileName").waitFor({ state: "attached" });
+    await page.waitForFunction(() => document.querySelector("#convertButton")?.disabled === false);
+    const selectedName = await page.locator("#fileName").textContent();
+    if (selectedName !== "Selected: smoke-test.wav") throw new Error(`File selection failed: ${selectedName}`);
+
     await page.selectOption("#format", "wav");
     await page.locator("#convertButton").click();
     await assertDownload("wav");
