@@ -3,15 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Evantine fast MP3 and WAV converter with an optional YouTube downloader backend.">
-    <title>Evantine Audio Converter</title>
+    <meta name="description" content="Free online MP3 and WAV converter. Convert MP3 to WAV or WAV to MP3 quickly in your browser with Evantine.">
+    <meta name="robots" content="index,follow">
+    <link rel="canonical" href="https://converter.evantinetools.com/">
+    <title>Free MP3 & WAV Converter Online | Evantine</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header>
         <p class="eyebrow">EVANTINE</p>
-        <h1>Audio Converter</h1>
-        <p>Fast, simple MP3 and WAV conversion in your browser.</p>
+        <h1>Free MP3 &amp; WAV Converter</h1>
+        <p>Fast, simple audio conversion in your browser.</p>
     </header>
 
     <main>
@@ -33,37 +35,33 @@
             </div>
 
             <div class="progress-wrap" aria-live="polite">
-                <div class="progress-track" aria-hidden="true">
-                    <div id="progressBar" class="progress-bar"></div>
-                </div>
+                <div class="progress-track" aria-hidden="true"><div id="progressBar" class="progress-bar"></div></div>
                 <p id="status">Choose a file to begin.</p>
             </div>
-
             <div id="downloadArea"></div>
+        </section>
 
-            <hr>
+        <section class="seo-links" aria-labelledby="formats-title">
+            <h2 id="formats-title">Popular audio conversions</h2>
+            <p><a href="/mp3-to-wav.html">MP3 to WAV converter</a> · <a href="/wav-to-mp3.html">WAV to MP3 converter</a></p>
+            <h2>Free audio conversion online</h2>
+            <p>Evantine makes simple MP3 and WAV conversion available directly in your browser. No desktop software is required for the basic converter. Choose a file, select an output format, and download your converted audio.</p>
+        </section>
 
-            <div class="youtube-box">
-                <h2>YouTube Downloader</h2>
-                <p>Use this for videos you are authorized to download. The downloader runs through a separate server because a GitHub Pages site cannot run the required media downloader directly.</p>
-                <input id="youtubeUrl" type="url" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
-                <div class="settings">
-                    <label for="youtubeFormat">Download as</label>
-                    <select id="youtubeFormat">
-                        <option value="mp4">MP4 Video</option>
-                        <option value="mp3">MP3 Audio</option>
-                    </select>
-                    <button id="youtubeButton" type="button">Download</button>
-                </div>
-                <p id="youtubeStatus" class="file-name" aria-live="polite"></p>
+        <section class="youtube-box">
+            <h2>YouTube Downloader</h2>
+            <p>Use this for videos you are authorized to download. The downloader runs through a separate server because a GitHub Pages site cannot run the required media downloader directly.</p>
+            <input id="youtubeUrl" type="url" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
+            <div class="settings">
+                <label for="youtubeFormat">Download as</label>
+                <select id="youtubeFormat"><option value="mp4">MP4 Video</option><option value="mp3">MP3 Audio</option></select>
+                <button id="youtubeButton" type="button">Download</button>
             </div>
+            <p id="youtubeStatus" class="file-name" aria-live="polite"></p>
         </section>
     </main>
 
-    <footer>
-        <p>© 2026 Evantine</p>
-    </footer>
-
+    <footer><p>© 2026 Evantine</p></footer>
     <script src="script.js?v=20260917"></script>
 </body>
 </html>
