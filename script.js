@@ -18,6 +18,7 @@ let downloadUrl = null;
 let mp3EncoderPromise = null;
 const MP3_BITRATE = 192;
 const ENCODE_BLOCK_SIZE = 32768;
+const MAX_FILE_SIZE = 250 * 1024 * 1024;
 
 function setStatus(message) { status.textContent = message; }
 function setProgress(value) { progressBar.style.width = `${Math.max(0, Math.min(100, Math.round(value * 100)))}%`; }
@@ -214,7 +215,20 @@ if (hubTrack) {
 }
 
 fileInput.addEventListener("change", () => {
-    selectedFile = fileInput.files?.[0] || null;
+    const file = fileInput.files?.[0] || null;
+    if (file && file.size > MAX_FILE_SIZE) {
+        selectedFile = null;
+        fileInput.value = "";
+        revokeDownload();
+        downloadArea.replaceChildren();
+        setProgress(0);
+        convertButton.disabled = true;
+        fileName.textContent = "File is too large (250 MB max).";
+        fileName.classList.remove("file-selected");
+        setStatus("Choose a smaller MP3 or WAV file.");
+        return;
+    }
+    selectedFile = file;
     revokeDownload();
     downloadArea.replaceChildren();
     setProgress(0);
