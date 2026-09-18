@@ -34,13 +34,12 @@ jobs:
           test -f server/requirements.txt
           test -f render.yaml
 
-      - name: Check converter and downloader hooks
+      - name: Check converter and backend hooks
         run: |
           grep -q 'createMp3Encoder' script.js
           grep -q 'audioBufferToWav' script.js
           grep -q 'decodeAudio' script.js
-          grep -q 'youtubeButton' script.js
-          grep -q '/api/youtube' script.js
+          grep -q 'inputExtension' script.js
           grep -q 'yt_dlp' server/main.py
           grep -q '/health' server/main.py
 
