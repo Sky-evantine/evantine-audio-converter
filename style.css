@@ -14,7 +14,7 @@ body {
 
 header {
   text-align: center;
-  padding: 56px 20px 24px;
+  padding: 48px 20px 22px;
 }
 
 .eyebrow {
@@ -38,7 +38,7 @@ header > p:last-child {
 main {
   width: min(calc(100% - 24px), 680px);
   margin: 0 auto;
-  padding: 20px 0 64px;
+  padding: 18px 0 48px;
 }
 
 .converter {
@@ -46,7 +46,7 @@ main {
   background: #15151c;
   border: 1px solid #292933;
   border-radius: 20px;
-  box-shadow: 0 18px 60px rgba(0,0,0,.22);
+  box-shadow: 0 16px 50px rgba(0,0,0,.22);
 }
 
 .converter:focus-within {
@@ -199,14 +199,14 @@ select:focus {
 }
 
 .small-note {
-  margin: 18px 8px 0;
+  margin: 16px 8px 0;
   color: #666;
   font-size: 13px;
   text-align: center;
 }
 
 footer {
-  padding: 30px 20px;
+  padding: 24px 20px;
   color: #666;
   text-align: center;
 }
