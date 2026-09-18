@@ -13,7 +13,7 @@ from starlette.background import BackgroundTask
 
 app = FastAPI(title="Evantine YouTube Downloader")
 
-allowed_origins = [origin.strip() for origin in os.getenv("ALLOWED_ORIGINS", "*").split(",") if origin.strip()]
+allowed_origins = [origin.strip() for origin in os.getenv("ALLOWED_ORIGINS", "https://converter.evantinetools.com").split(",") if origin.strip()]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
