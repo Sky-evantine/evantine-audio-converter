@@ -1,92 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Free online MP3 and WAV converter. Convert MP3 to WAV or WAV to MP3 quickly in your browser with Evantine.">
-    <meta name="robots" content="index,follow">
-    <meta name="theme-color" content="#0b0b0f">
-    <link rel="canonical" href="https://converter.evantinetools.com/">
-    <link rel="preconnect" href="https://unpkg.com">
-    <title>Free MP3 &amp; WAV Converter Online | Evantine</title>
-    <script type="application/ld+json">
-    {
-      "@context":"https://schema.org",
-      "@type":"WebApplication",
-      "name":"Evantine Audio Converter",
-      "url":"https://converter.evantinetools.com/",
-      "description":"Free online MP3 and WAV converter for browser-based audio conversion.",
-      "applicationCategory":"MultimediaApplication",
-      "operatingSystem":"Any",
-      "offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}
-    }
-    </script>
-    <link rel="preload" href="style.css" as="style">
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Free online MP3 and WAV converter. Convert MP3 to WAV or WAV to MP3 quickly in your browser with Evantine.">
+  <meta name="robots" content="index,follow">
+  <meta name="theme-color" content="#0b0b0f">
+  <link rel="canonical" href="https://converter.evantinetools.com/">
+  <link rel="preconnect" href="https://unpkg.com">
+  <title>Free MP3 &amp; WAV Converter Online | Evantine</title>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"WebApplication","name":"Evantine Audio Converter","url":"https://converter.evantinetools.com/","description":"Free online MP3 and WAV converter for browser-based audio conversion.","applicationCategory":"MultimediaApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}
+  </script>
+  <link rel="preload" href="style.css" as="style">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header>
-        <p class="eyebrow">EVANTINE</p>
-        <h1>Free MP3 &amp; WAV Converter</h1>
-        <p>Fast, simple audio conversion in your browser.</p>
-    </header>
+  <header>
+    <p class="eyebrow">EVANTINE</p>
+    <h1>Free MP3 &amp; WAV Converter</h1>
+    <p>Simple, fast audio conversion in your browser.</p>
+  </header>
 
-    <main class="hub-deck" id="hubDeck" aria-label="Evantine tools">
-        <div class="hub-track" id="hubTrack">
-        <section class="hub converter" aria-labelledby="converter-title">
-            <h2 id="converter-title">Convert audio</h2>
+  <main>
+    <section class="converter" aria-labelledby="converter-title">
+      <h2 id="converter-title">Convert audio</h2>
+      <p class="intro">MP3 ↔ WAV. Your file stays in your browser.</p>
 
-            <input type="file" id="fileInput" accept=".mp3,.wav,audio/mpeg,audio/wav">
-            <label for="fileInput" class="choose-button">Choose Audio File</label>
-            <p id="fileName" class="file-name" aria-live="polite">No file selected</p>
+      <input type="file" id="fileInput" accept=".mp3,.wav,audio/mpeg,audio/wav">
+      <label for="fileInput" class="choose-button">Choose Audio File</label>
+      <p id="fileName" class="file-name" aria-live="polite">No file selected</p>
 
-            <div class="settings">
-                <label for="format">Output Format</label>
-                <select id="format">
-                    <option value="mp3">MP3</option>
-                    <option value="wav">WAV</option>
-                </select>
-                <button id="convertButton" disabled>Convert</button>
-            </div>
+      <div class="settings">
+        <label for="format">Output Format</label>
+        <select id="format">
+          <option value="mp3">MP3</option>
+          <option value="wav">WAV</option>
+        </select>
+        <button id="convertButton" type="button" disabled>Convert</button>
+      </div>
 
-            <div class="progress-wrap" aria-live="polite">
-                <div class="progress-track" aria-hidden="true"><div id="progressBar" class="progress-bar"></div></div>
-                <p id="status">Choose a file to begin.</p>
-            </div>
-            <div id="downloadArea"></div>
-        </section>
+      <div class="progress-wrap" aria-live="polite">
+        <div class="progress-track" aria-hidden="true"><div id="progressBar" class="progress-bar"></div></div>
+        <p id="status">Choose a file to begin.</p>
+      </div>
+      <div id="downloadArea"></div>
+    </section>
 
-        <section class="hub seo-links" aria-labelledby="formats-title">
-            <h2 id="formats-title">Popular audio conversions</h2>
-            <p><a href="/mp3-to-wav.html">MP3 to WAV converter</a> · <a href="/wav-to-mp3.html">WAV to MP3 converter</a></p>
-        </section>
+    <p class="small-note">For the first test, we're keeping this intentionally simple: MP3 and WAV only.</p>
+  </main>
 
-        <section class="hub youtube-box">
-            <h2>YouTube Downloader</h2>
-            <input id="youtubeUrl" type="url" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
-            <div class="settings">
-                <label for="youtubeFormat">Download as</label>
-                <select id="youtubeFormat"><option value="mp4">MP4 Video</option><option value="mp3">MP3 Audio</option></select>
-                <button id="youtubeButton" type="button">Download</button>
-            </div>
-            <p id="youtubeStatus" class="file-name" aria-live="polite"></p>
-        </section>
-        <section class="hub about-hub" aria-labelledby="about-title">
-            <h2 id="about-title">More tools</h2>
-            <div class="hub-actions">
-                <a class="hub-action" href="/mp3-to-wav.html">MP3 → WAV</a>
-                <a class="hub-action" href="/wav-to-mp3.html">WAV → MP3</a>
-            </div>
-        </section>
-        </div>
-        <div class="hub-nav" aria-label="Tool sections">
-            <button class="hub-arrow" id="hubPrev" type="button" aria-label="Previous section">‹</button>
-            <div class="hub-dots" id="hubDots"></div>
-            <button class="hub-arrow" id="hubNext" type="button" aria-label="Next section">›</button>
-        </div>
-    </main>
-
-    <footer><p>© 2026 Evantine</p></footer>
-    <script src="script.js?v=20260917-11"></script>
+  <footer><p>© 2026 Evantine</p></footer>
+  <script src="script.js?v=20260918-01"></script>
 </body>
 </html>
