@@ -12,8 +12,8 @@ let mp3EncoderPromise = null;
 let converting = false;
 
 const MP3_BITRATE = 192;
-const ENCODE_BLOCK_SIZE = 65536;
-const YIELD_EVERY_BLOCKS = 4;
+const ENCODE_BLOCK_SIZE = 131072;
+const YIELD_EVERY_BLOCKS = 16;
 const MAX_FILE_SIZE = 250 * 1024 * 1024;
 
 function setStatus(message) {
@@ -133,7 +133,7 @@ async function audioBufferToWav(buffer) {
 
   const channelData = Array.from({ length: channels }, (_, i) => buffer.getChannelData(i));
   const pcm = new Int16Array(output, 44);
-  const chunkFrames = 262144;
+  const chunkFrames = 524288;
 
   for (let start = 0; start < frames; start += chunkFrames) {
     const end = Math.min(start + chunkFrames, frames);
