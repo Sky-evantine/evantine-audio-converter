@@ -19,7 +19,7 @@ let mp3EncoderPromise = null;
 const MP3_BITRATE = 192;
 const ENCODE_BLOCK_SIZE = 65536;
 const MAX_FILE_SIZE = 250 * 1024 * 1024;
-const YIELD_INTERVAL_MS = 32;
+const YIELD_INTERVAL_MS = 16;
 
 function setStatus(message) { status.textContent = message; }
 function setProgress(value) { progressBar.style.width = `${Math.max(0, Math.min(100, Math.round(value * 100)))}%`; }
@@ -33,6 +33,16 @@ function showDone(element) {
     element.classList.remove("status-done");
     void element.offsetWidth;
     element.classList.add("status-done");
+}
+
+function inputExtension(file) {
+    return file?.name.split(".").pop()?.toLowerCase() || "";
+}
+
+function warmMp3Encoder() {
+    if (!mp3EncoderPromise) {
+        void getMp3Encoder().catch(() => {});
+    }
 }
 
 function revokeDownload() {
@@ -249,8 +259,21 @@ fileInput.addEventListener("change", () => {
     if (selectedFile) {
         void fileName.offsetWidth;
         fileName.classList.add("file-selected");
+
+        // Pick the useful opposite format automatically.
+        const inputFormat = inputExtension(selectedFile);
+        if (inputFormat === "mp3") format.value = "wav";
+        if (inputFormat === "wav") {
+            format.value = "mp3";
+            setStatus("Preparing the MP3 engine...");
+            warmMp3Encoder();
+        }
     }
-    setStatus(selectedFile ? "Ready. Choose MP3 or WAV." : "Choose an audio file to begin.");
+    if (!selectedFile) {
+        setStatus("Choose an audio file to begin.");
+    } else if (inputExtension(selectedFile) !== "wav") {
+        setStatus("Ready. WAV is selected.");
+    }
 });
 
 convertButton.addEventListener("click", async () => {
@@ -262,7 +285,7 @@ convertButton.addEventListener("click", async () => {
     status.classList.remove("status-done");
     try {
         const outputFormat = format.value;
-        const inputFormat = selectedFile.name.split(".").pop()?.toLowerCase();
+        const inputFormat = inputExtension(selectedFile);
         if (!["mp3", "wav"].includes(inputFormat)) {
             throw new Error("Please choose an MP3 or WAV file.");
         }
@@ -271,6 +294,10 @@ convertButton.addEventListener("click", async () => {
             setProgress(1); setStatus(`Already ${outputFormat.toUpperCase()}. Ready to download.`); showDone(status); return;
         }
         setStatus("Reading audio...");
+        if (outputFormat === "mp3") {
+            setStatus("Preparing MP3 encoder...");
+            await getMp3Encoder();
+        }
         const buffer = await decodeAudio(selectedFile);
         const blob = outputFormat === "wav" ? await audioBufferToWav(buffer) : await convertToMp3(buffer);
         makeDownload(blob, outputFormat);
