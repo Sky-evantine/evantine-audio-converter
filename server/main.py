@@ -2,6 +2,7 @@ import os
 import re
 import shutil
 import tempfile
+import threading
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -13,13 +14,18 @@ from starlette.background import BackgroundTask
 
 app = FastAPI(title="Evantine YouTube Downloader")
 
+MAX_DOWNLOAD_SIZE = 250 * 1024 * 1024
+DOWNLOAD_TIMEOUT = 60
+MAX_CONCURRENT_DOWNLOADS = 2
+_download_slots = threading.BoundedSemaphore(MAX_CONCURRENT_DOWNLOADS)
+
 allowed_origins = [origin.strip() for origin in os.getenv("ALLOWED_ORIGINS", "https://converter.evantinetools.com").split(",") if origin.strip()]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=False,
     allow_methods=["GET"],
-    allow_headers=["*"],
+    allow_headers=["Accept"],
 )
 
 YOUTUBE_HOSTS = {"youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be", "www.youtu.be"}
@@ -55,6 +61,9 @@ def youtube_download(
     format: str = Query("mp4", pattern="^(mp4|mp3)$"),
 ):
     url = validate_youtube_url(url)
+    if not _download_slots.acquire(blocking=False):
+        raise HTTPException(status_code=503, detail="The downloader is busy. Please try again shortly.")
+
     temp_dir = Path(tempfile.mkdtemp(prefix="evantine-yt-"))
 
     try:
@@ -66,6 +75,9 @@ def youtube_download(
                 "noplaylist": True,
                 "quiet": True,
                 "no_warnings": True,
+                "socket_timeout": DOWNLOAD_TIMEOUT,
+                "retries": 1,
+                "max_filesize": MAX_DOWNLOAD_SIZE,
                 "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "mp3", "preferredquality": "192"}],
             }
         else:
@@ -76,6 +88,9 @@ def youtube_download(
                 "noplaylist": True,
                 "quiet": True,
                 "no_warnings": True,
+                "socket_timeout": DOWNLOAD_TIMEOUT,
+                "retries": 1,
+                "max_filesize": MAX_DOWNLOAD_SIZE,
             }
 
         with yt_dlp.YoutubeDL(options) as downloader:
@@ -102,3 +117,5 @@ def youtube_download(
     except Exception as exc:
         remove_temp_dir(temp_dir)
         raise HTTPException(status_code=500, detail=f"Downloader error: {str(exc)[:500]}") from exc
+    finally:
+        _download_slots.release()
