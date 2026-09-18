@@ -78,9 +78,6 @@ def youtube_download(
                 "socket_timeout": DOWNLOAD_TIMEOUT,
                 "retries": 1,
                 "max_filesize": MAX_DOWNLOAD_SIZE,
-                "socket_timeout": DOWNLOAD_TIMEOUT,
-                "retries": 1,
-                "max_filesize": MAX_DOWNLOAD_SIZE,
                 "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "mp3", "preferredquality": "192"}],
             }
         else:
@@ -91,6 +88,9 @@ def youtube_download(
                 "noplaylist": True,
                 "quiet": True,
                 "no_warnings": True,
+                "socket_timeout": DOWNLOAD_TIMEOUT,
+                "retries": 1,
+                "max_filesize": MAX_DOWNLOAD_SIZE,
             }
 
         with yt_dlp.YoutubeDL(options) as downloader:
