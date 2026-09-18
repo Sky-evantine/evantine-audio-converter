@@ -39,12 +39,6 @@ function inputExtension(file) {
     return file?.name.split(".").pop()?.toLowerCase() || "";
 }
 
-function warmMp3Encoder() {
-    if (!mp3EncoderPromise) {
-        void getMp3Encoder().catch(() => {});
-    }
-}
-
 function revokeDownload() {
     if (downloadUrl) URL.revokeObjectURL(downloadUrl);
     downloadUrl = null;
@@ -265,8 +259,6 @@ fileInput.addEventListener("change", () => {
         if (inputFormat === "mp3") format.value = "wav";
         if (inputFormat === "wav") {
             format.value = "mp3";
-            setStatus("Preparing the MP3 engine...");
-            warmMp3Encoder();
         }
     }
     if (!selectedFile) {
