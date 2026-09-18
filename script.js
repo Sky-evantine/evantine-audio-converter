@@ -201,6 +201,9 @@ if (hubTrack) {
 
     hubTrack.addEventListener("pointerdown", event => {
         if (event.pointerType === "mouse" && event.button !== 0) return;
+        // Do not let the swipe/drag layer capture taps on real controls.
+        // Pointer capture on the parent can otherwise swallow button/select activation.
+        if (event.target.closest("button, input, select, textarea, a, label")) return;
         dragging = true;
         dragStartX = event.clientX;
         dragStartScroll = hubTrack.scrollLeft;
