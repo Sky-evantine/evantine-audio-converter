@@ -5,361 +5,280 @@ const convertButton = document.getElementById("convertButton");
 const status = document.getElementById("status");
 const progressBar = document.getElementById("progressBar");
 const downloadArea = document.getElementById("downloadArea");
-const youtubeUrl = document.getElementById("youtubeUrl");
-const youtubeFormat = document.getElementById("youtubeFormat");
-const youtubeButton = document.getElementById("youtubeButton");
-const youtubeStatus = document.getElementById("youtubeStatus");
-
-// Set this to your deployed server URL when the backend is deployed.
-const YOUTUBE_API_BASE = window.EVANTINE_YOUTUBE_API || "https://evantine-youtube-downloader.onrender.com";
 
 let selectedFile = null;
 let downloadUrl = null;
 let mp3EncoderPromise = null;
+let converting = false;
+
 const MP3_BITRATE = 192;
 const ENCODE_BLOCK_SIZE = 65536;
+const YIELD_EVERY_BLOCKS = 4;
 const MAX_FILE_SIZE = 250 * 1024 * 1024;
-const YIELD_INTERVAL_MS = 16;
 
-function setStatus(message) { status.textContent = message; }
-function setProgress(value) { progressBar.style.width = `${Math.max(0, Math.min(100, Math.round(value * 100)))}%`; }
-function baseName(name) { return name.replace(/\.[^/.]+$/, ""); }
-
-function setConverting(isConverting) {
-    document.body.classList.toggle("is-converting", isConverting);
+function setStatus(message) {
+  status.textContent = message;
 }
 
-function showDone(element) {
-    element.classList.remove("status-done");
-    void element.offsetWidth;
-    element.classList.add("status-done");
+function setProgress(value) {
+  progressBar.style.width = `${Math.max(0, Math.min(100, Math.round(value * 100)))}%`;
+}
+
+function baseName(name) {
+  return name.replace(/\.[^/.]+$/, "");
 }
 
 function inputExtension(file) {
-    return file?.name.split(".").pop()?.toLowerCase() || "";
+  return file?.name.split(".").pop()?.toLowerCase() || "";
 }
 
 function revokeDownload() {
-    if (downloadUrl) URL.revokeObjectURL(downloadUrl);
-    downloadUrl = null;
+  if (downloadUrl) URL.revokeObjectURL(downloadUrl);
+  downloadUrl = null;
 }
 
 function makeDownload(blob, extension) {
-    revokeDownload();
-    downloadUrl = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = downloadUrl;
-    link.download = `${baseName(selectedFile.name)}.${extension}`;
-    link.className = "download-button";
-    link.textContent = `Download ${extension.toUpperCase()}`;
-    downloadArea.replaceChildren(link);
+  revokeDownload();
+  downloadUrl = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = downloadUrl;
+  link.download = `${baseName(selectedFile.name)}.${extension}`;
+  link.className = "download-button";
+  link.textContent = `Download ${extension.toUpperCase()}`;
+  downloadArea.replaceChildren(link);
 }
 
 function loadScript(src) {
-    return new Promise((resolve, reject) => {
-        const script = document.createElement("script");
-        script.src = src;
-        script.onload = resolve;
-        script.onerror = () => reject(new Error("Fast MP3 engine could not load."));
-        document.head.appendChild(script);
-    });
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[src="${src}"]`);
+    if (existing) {
+      existing.addEventListener("load", resolve, { once: true });
+      existing.addEventListener("error", () => reject(new Error("MP3 engine could not load.")), { once: true });
+      if (window.WasmMediaEncoder) resolve();
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = src;
+    script.onload = resolve;
+    script.onerror = () => reject(new Error("MP3 engine could not load."));
+    document.head.appendChild(script);
+  });
 }
 
 async function getMp3Encoder() {
-    if (!mp3EncoderPromise) {
-        mp3EncoderPromise = (async () => {
-            if (!window.WasmMediaEncoder) {
-                await loadScript("https://unpkg.com/wasm-media-encoders@0.7.0/dist/umd/WasmMediaEncoder.min.js");
-            }
-            if (!window.WasmMediaEncoder?.createMp3Encoder) throw new Error("Fast MP3 engine is unavailable.");
-            return window.WasmMediaEncoder.createMp3Encoder();
-        })().catch(error => { mp3EncoderPromise = null; throw error; });
-    }
-    return mp3EncoderPromise;
+  if (!mp3EncoderPromise) {
+    mp3EncoderPromise = (async () => {
+      if (!window.WasmMediaEncoder) {
+        await loadScript("https://unpkg.com/wasm-media-encoders@0.7.0/dist/umd/WasmMediaEncoder.min.js");
+      }
+      if (!window.WasmMediaEncoder?.createMp3Encoder) {
+        throw new Error("MP3 engine is unavailable.");
+      }
+      return window.WasmMediaEncoder.createMp3Encoder();
+    })().catch(error => {
+      mp3EncoderPromise = null;
+      throw error;
+    });
+  }
+
+  return mp3EncoderPromise;
 }
 
-async function yieldToBrowser() {
-    await new Promise(resolve => {
-        if ("requestIdleCallback" in window) {
-            window.requestIdleCallback(resolve, { timeout: YIELD_INTERVAL_MS });
-        } else {
-            setTimeout(resolve, 0);
-        }
-    });
+function yieldToBrowser() {
+  return new Promise(resolve => setTimeout(resolve, 0));
 }
 
 async function decodeAudio(file) {
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContextClass) throw new Error("This browser cannot decode audio files.");
-    const context = new AudioContextClass();
-    try { return await context.decodeAudioData(await file.arrayBuffer()); }
-    finally { await context.close().catch(() => {}); }
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) throw new Error("This browser cannot decode audio files.");
+
+  setStatus("Decoding audio...");
+  setProgress(0.04);
+
+  const context = new AudioContextClass();
+  try {
+    const data = await file.arrayBuffer();
+    return await context.decodeAudioData(data);
+  } finally {
+    await context.close().catch(() => {});
+  }
 }
 
 async function audioBufferToWav(buffer) {
-    const channels = Math.min(2, buffer.numberOfChannels);
-    const frames = buffer.length;
-    const dataSize = frames * channels * 2;
-    const output = new ArrayBuffer(44 + dataSize);
-    const view = new DataView(output);
-    const write = (offset, text) => { for (let i = 0; i < text.length; i++) view.setUint8(offset + i, text.charCodeAt(i)); };
+  const channels = Math.min(2, buffer.numberOfChannels);
+  const frames = buffer.length;
+  const dataSize = frames * channels * 2;
+  const output = new ArrayBuffer(44 + dataSize);
+  const view = new DataView(output);
 
-    write(0, "RIFF"); view.setUint32(4, 36 + dataSize, true); write(8, "WAVE"); write(12, "fmt ");
-    view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, channels, true);
-    view.setUint32(24, buffer.sampleRate, true); view.setUint32(28, buffer.sampleRate * channels * 2, true);
-    view.setUint16(32, channels * 2, true); view.setUint16(34, 16, true); write(36, "data"); view.setUint32(40, dataSize, true);
+  const writeText = (offset, text) => {
+    for (let i = 0; i < text.length; i++) view.setUint8(offset + i, text.charCodeAt(i));
+  };
 
-    const channelData = Array.from({ length: channels }, (_, i) => buffer.getChannelData(i));
-    let offset = 44;
-    const yieldEvery = 65536;
-    for (let frame = 0; frame < frames; frame++) {
-        for (let channel = 0; channel < channels; channel++) {
-            const sample = Math.max(-1, Math.min(1, channelData[channel][frame]));
-            view.setInt16(offset, sample < 0 ? sample * 32768 : sample * 32767, true);
-            offset += 2;
-        }
-        if ((frame + 1) % yieldEvery === 0 || frame === frames - 1) {
-            const progress = (frame + 1) / frames;
-            setProgress(progress * 0.95);
-            setStatus("Building WAV... " + Math.round(progress * 100) + "%");
-            await yieldToBrowser();
-        }
+  writeText(0, "RIFF");
+  view.setUint32(4, 36 + dataSize, true);
+  writeText(8, "WAVE");
+  writeText(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, channels, true);
+  view.setUint32(24, buffer.sampleRate, true);
+  view.setUint32(28, buffer.sampleRate * channels * 2, true);
+  view.setUint16(32, channels * 2, true);
+  view.setUint16(34, 16, true);
+  writeText(36, "data");
+  view.setUint32(40, dataSize, true);
+
+  const channelData = Array.from({ length: channels }, (_, i) => buffer.getChannelData(i));
+  const pcm = new Int16Array(output, 44);
+  const chunkFrames = 262144;
+
+  for (let start = 0; start < frames; start += chunkFrames) {
+    const end = Math.min(start + chunkFrames, frames);
+    let out = (start * channels);
+
+    for (let frame = start; frame < end; frame++) {
+      for (let channel = 0; channel < channels; channel++) {
+        const sample = Math.max(-1, Math.min(1, channelData[channel][frame]));
+        pcm[out++] = sample < 0 ? sample * 32768 : sample * 32767;
+      }
     }
-    return new Blob([output], { type: "audio/wav" });
+
+    const progress = end / frames;
+    setProgress(0.05 + progress * 0.9);
+    setStatus(`Building WAV... ${Math.round(progress * 100)}%`);
+
+    if (end < frames) await yieldToBrowser();
+  }
+
+  return new Blob([output], { type: "audio/wav" });
 }
 
 async function convertToMp3(buffer) {
-    const encoder = await getMp3Encoder();
-    const channels = Math.min(2, buffer.numberOfChannels);
-    const data = Array.from({ length: channels }, (_, i) => buffer.getChannelData(i));
-    encoder.configure({ sampleRate: buffer.sampleRate, channels, bitrate: MP3_BITRATE });
+  setStatus("Starting MP3 encoder...");
+  setProgress(0.05);
 
-    const chunks = [];
-    for (let offset = 0; offset < buffer.length; offset += ENCODE_BLOCK_SIZE) {
-        const end = Math.min(offset + ENCODE_BLOCK_SIZE, buffer.length);
-        const samples = data.map(channel => channel.subarray(offset, end));
-        const encoded = encoder.encode(samples);
-        if (encoded.length) chunks.push(new Uint8Array(encoded));
-        const progress = end / buffer.length;
-        setProgress(progress * 0.95);
-        setStatus("Converting to MP3... " + Math.round(progress * 100) + "%");
-        await yieldToBrowser();
+  const encoder = await getMp3Encoder();
+  const channels = Math.min(2, buffer.numberOfChannels);
+  const data = Array.from({ length: channels }, (_, i) => buffer.getChannelData(i));
+
+  encoder.configure({
+    sampleRate: buffer.sampleRate,
+    channels,
+    bitrate: MP3_BITRATE
+  });
+
+  const chunks = [];
+
+  for (let offset = 0, block = 0; offset < buffer.length; offset += ENCODE_BLOCK_SIZE, block++) {
+    const end = Math.min(offset + ENCODE_BLOCK_SIZE, buffer.length);
+    const samples = data.map(channel => channel.subarray(offset, end));
+    const encoded = encoder.encode(samples);
+
+    if (encoded.length) chunks.push(new Uint8Array(encoded));
+
+    const progress = end / buffer.length;
+    setProgress(0.05 + progress * 0.9);
+    setStatus(`Converting to MP3... ${Math.round(progress * 100)}%`);
+
+    if (block % YIELD_EVERY_BLOCKS === 0 && end < buffer.length) {
+      await yieldToBrowser();
     }
+  }
 
-    const finalChunk = encoder.finalize();
-    if (finalChunk.length) chunks.push(new Uint8Array(finalChunk));
-    return new Blob(chunks, { type: "audio/mpeg" });
-}
+  const finalChunk = encoder.finalize();
+  if (finalChunk.length) chunks.push(new Uint8Array(finalChunk));
 
-const hubTrack = document.getElementById("hubTrack");
-const hubPrev = document.getElementById("hubPrev");
-const hubNext = document.getElementById("hubNext");
-const hubDots = document.getElementById("hubDots");
-
-if (hubTrack) {
-    const hubs = Array.from(hubTrack.querySelectorAll(".hub"));
-    let currentHub = 0;
-    let dragStartX = 0;
-    let dragStartScroll = 0;
-    let dragging = false;
-
-    hubs.forEach((_, index) => {
-        const dot = document.createElement("button");
-        dot.type = "button";
-        dot.className = "hub-dot" + (index === 0 ? " active" : "");
-        dot.setAttribute("aria-label", "Go to section " + (index + 1));
-        dot.addEventListener("click", () => goToHub(index));
-        hubDots?.appendChild(dot);
-    });
-
-    function updateHub(index) {
-        currentHub = Math.max(0, Math.min(hubs.length - 1, index));
-        hubDots?.querySelectorAll(".hub-dot").forEach((dot, i) => {
-            dot.classList.toggle("active", i === currentHub);
-        });
-    }
-
-    function goToHub(index) {
-        updateHub(index);
-        hubTrack.scrollTo({ left: hubs[currentHub].offsetLeft - hubTrack.offsetLeft, behavior: "smooth" });
-    }
-
-    hubPrev?.addEventListener("click", () => goToHub(currentHub - 1));
-    hubNext?.addEventListener("click", () => goToHub(currentHub + 1));
-
-    hubTrack.addEventListener("scroll", () => {
-        const center = hubTrack.scrollLeft + hubTrack.clientWidth / 2;
-        let nearest = 0;
-        let distance = Infinity;
-        hubs.forEach((hub, i) => {
-            const hubCenter = hub.offsetLeft - hubTrack.offsetLeft + hub.offsetWidth / 2;
-            const d = Math.abs(center - hubCenter);
-            if (d < distance) { distance = d; nearest = i; }
-        });
-        updateHub(nearest);
-    }, { passive: true });
-
-    hubTrack.addEventListener("pointerdown", event => {
-        if (event.pointerType === "mouse" && event.button !== 0) return;
-        // Do not let the swipe/drag layer capture taps on real controls.
-        // Pointer capture on the parent can otherwise swallow button/select activation.
-        if (event.target.closest("button, input, select, textarea, a, label")) return;
-        dragging = true;
-        dragStartX = event.clientX;
-        dragStartScroll = hubTrack.scrollLeft;
-        hubTrack.classList.add("is-dragging");
-        hubTrack.setPointerCapture?.(event.pointerId);
-    });
-
-    hubTrack.addEventListener("pointermove", event => {
-        if (!dragging) return;
-        hubTrack.scrollLeft = dragStartScroll - (event.clientX - dragStartX);
-    });
-
-    const endDrag = event => {
-        if (!dragging) return;
-        dragging = false;
-        hubTrack.classList.remove("is-dragging");
-        hubTrack.releasePointerCapture?.(event.pointerId);
-        const moved = event.clientX - dragStartX;
-        if (Math.abs(moved) > 45) {
-            goToHub(currentHub + (moved < 0 ? 1 : -1));
-        } else {
-            goToHub(currentHub);
-        }
-    };
-    hubTrack.addEventListener("pointerup", endDrag);
-    hubTrack.addEventListener("pointercancel", endDrag);
+  return new Blob(chunks, { type: "audio/mpeg" });
 }
 
 fileInput.addEventListener("change", () => {
-    const file = fileInput.files?.[0] || null;
-    if (file && file.size > MAX_FILE_SIZE) {
-        selectedFile = null;
-        fileInput.value = "";
-        revokeDownload();
-        downloadArea.replaceChildren();
-        setProgress(0);
-        convertButton.disabled = true;
-        fileName.textContent = "File is too large (250 MB max).";
-        fileName.classList.remove("file-selected");
-        setStatus("Choose a smaller MP3 or WAV file.");
-        return;
-    }
-    selectedFile = file;
+  const file = fileInput.files?.[0] || null;
+
+  if (file && file.size > MAX_FILE_SIZE) {
+    selectedFile = null;
+    fileInput.value = "";
     revokeDownload();
     downloadArea.replaceChildren();
+    convertButton.disabled = true;
     setProgress(0);
-    convertButton.disabled = !selectedFile;
-    fileName.textContent = selectedFile ? `Selected: ${selectedFile.name}` : "No file selected";
-    fileName.classList.remove("file-selected");
-    if (selectedFile) {
-        void fileName.offsetWidth;
-        fileName.classList.add("file-selected");
+    fileName.textContent = "File is too large (250 MB max).";
+    setStatus("Choose a smaller MP3 or WAV file.");
+    return;
+  }
 
-        // Pick the useful opposite format automatically.
-        const inputFormat = inputExtension(selectedFile);
-        if (inputFormat === "mp3") format.value = "wav";
-        if (inputFormat === "wav") {
-            format.value = "mp3";
-        }
-    }
-    if (!selectedFile) {
-        setStatus("Choose an audio file to begin.");
-    } else if (inputExtension(selectedFile) !== "wav") {
-        setStatus("Ready. WAV is selected.");
-    }
+  selectedFile = file;
+  revokeDownload();
+  downloadArea.replaceChildren();
+  setProgress(0);
+  convertButton.disabled = !selectedFile;
+  fileName.textContent = selectedFile ? `Selected: ${selectedFile.name}` : "No file selected";
+
+  if (!selectedFile) {
+    setStatus("Choose an audio file to begin.");
+    return;
+  }
+
+  const inputFormat = inputExtension(selectedFile);
+
+  if (!["mp3", "wav"].includes(inputFormat)) {
+    selectedFile = null;
+    convertButton.disabled = true;
+    setStatus("Please choose an MP3 or WAV file.");
+    return;
+  }
+
+  format.value = inputFormat === "mp3" ? "wav" : "mp3";
+  setStatus(`Ready. ${format.value.toUpperCase()} is selected.`);
 });
 
 convertButton.addEventListener("click", async () => {
-    if (!selectedFile) return;
-    convertButton.disabled = true;
-    setConverting(true);
+  if (!selectedFile || converting) return;
+
+  converting = true;
+  convertButton.disabled = true;
+  downloadArea.replaceChildren();
+  setProgress(0);
+  status.classList.remove("status-done");
+
+  try {
+    const outputFormat = format.value;
+    const inputFormat = inputExtension(selectedFile);
+
+    if (inputFormat === outputFormat) {
+      setStatus("Preparing download...");
+      const blob = new Blob([await selectedFile.arrayBuffer()], {
+        type: outputFormat === "mp3" ? "audio/mpeg" : "audio/wav"
+      });
+      makeDownload(blob, outputFormat);
+      setProgress(1);
+      setStatus(`Already ${outputFormat.toUpperCase()}. Ready to download.`);
+      status.classList.add("status-done");
+      return;
+    }
+
+    if (outputFormat === "mp3") {
+      setStatus("Loading MP3 engine...");
+      await getMp3Encoder();
+    }
+
+    const buffer = await decodeAudio(selectedFile);
+    const blob = outputFormat === "wav"
+      ? await audioBufferToWav(buffer)
+      : await convertToMp3(buffer);
+
+    makeDownload(blob, outputFormat);
+    setProgress(1);
+    setStatus(`Done. Your ${outputFormat.toUpperCase()} is ready.`);
+    status.classList.add("status-done");
+  } catch (error) {
+    console.error("Evantine conversion error:", error);
     setProgress(0);
-    downloadArea.replaceChildren();
-    status.classList.remove("status-done");
-    try {
-        const outputFormat = format.value;
-        const inputFormat = inputExtension(selectedFile);
-        if (!["mp3", "wav"].includes(inputFormat)) {
-            throw new Error("Please choose an MP3 or WAV file.");
-        }
-        if (inputFormat === outputFormat) {
-            makeDownload(new Blob([await selectedFile.arrayBuffer()], { type: outputFormat === "mp3" ? "audio/mpeg" : "audio/wav" }), outputFormat);
-            setProgress(1); setStatus(`Already ${outputFormat.toUpperCase()}. Ready to download.`); showDone(status); return;
-        }
-        setStatus("Reading audio...");
-        if (outputFormat === "mp3") {
-            setStatus("Preparing MP3 encoder...");
-            await getMp3Encoder();
-        }
-        const buffer = await decodeAudio(selectedFile);
-        const blob = outputFormat === "wav" ? await audioBufferToWav(buffer) : await convertToMp3(buffer);
-        makeDownload(blob, outputFormat);
-        setProgress(1); setStatus(`Done. Your ${outputFormat.toUpperCase()} is ready.`); showDone(status);
-    } catch (error) {
-        console.error("Evantine conversion error:", error);
-        setProgress(0); setStatus(`Conversion failed: ${error instanceof Error ? error.message : String(error)}`);
-    } finally {
-        setConverting(false);
-        convertButton.disabled = false;
-    }
-});
-
-function isYouTubeUrl(value) {
-    try {
-        const url = new URL(value);
-        return /(^|\.)youtube\.com$|(^|\.)youtu\.be$/.test(url.hostname);
-    } catch {
-        return false;
-    }
-}
-
-youtubeButton.addEventListener("click", async () => {
-    const value = youtubeUrl.value.trim();
-    const outputFormat = youtubeFormat.value;
-
-    if (!isYouTubeUrl(value)) {
-        youtubeStatus.textContent = "Please enter a valid YouTube URL.";
-        return;
-    }
-
-    youtubeButton.disabled = true;
-    youtubeStatus.classList.remove("status-done");
-    youtubeStatus.textContent = `Preparing ${outputFormat.toUpperCase()} download...`;
-
-    try {
-        const endpoint = new URL("/api/youtube", YOUTUBE_API_BASE);
-        endpoint.searchParams.set("url", value);
-        endpoint.searchParams.set("format", outputFormat);
-
-        const response = await fetch(endpoint.href);
-        if (!response.ok) {
-            let message = `Server returned ${response.status}.`;
-            try {
-                const payload = await response.json();
-                if (payload.detail) message = payload.detail;
-            } catch {}
-            throw new Error(message);
-        }
-
-        const blob = await response.blob();
-        if (!blob.size) throw new Error("The downloader returned an empty file.");
-
-        const objectUrl = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = objectUrl;
-        link.download = `evantine-youtube.${outputFormat}`;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
-        youtubeStatus.textContent = `Done. Your ${outputFormat.toUpperCase()} download should start now.`;
-        showDone(youtubeStatus);
-    } catch (error) {
-        console.error("Evantine YouTube error:", error);
-        youtubeStatus.textContent = `Download failed: ${error instanceof Error ? error.message : String(error)}`;
-    } finally {
-        youtubeButton.disabled = false;
-    }
+    setStatus(`Conversion failed: ${error instanceof Error ? error.message : String(error)}`);
+  } finally {
+    converting = false;
+    convertButton.disabled = !selectedFile;
+  }
 });
