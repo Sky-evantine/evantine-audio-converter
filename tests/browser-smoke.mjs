@@ -22,10 +22,22 @@ page.setDefaultTimeout(120000);
 const errors = [];
 page.on("pageerror", error => errors.push(`pageerror: ${error.message}`));
 page.on("console", message => { if (message.type() === "error") errors.push(`console: ${message.text()}`); });
+page.on("requestfailed", request => errors.push(`requestfailed: ${request.url()} :: ${request.failure()?.errorText || "unknown"}`));
 
 async function assertDownload(extension) {
     const link = page.locator("#downloadArea a");
-    await link.waitFor({ state: "attached", timeout: 120000 });
+    try {
+        await link.waitFor({ state: "attached", timeout: 15000 });
+    } catch (error) {
+        const state = await page.evaluate(() => ({
+            status: document.querySelector("#status")?.textContent,
+            buttonDisabled: document.querySelector("#convertButton")?.disabled,
+            selectedFile: document.querySelector("#fileName")?.textContent,
+            outputFormat: document.querySelector("#format")?.value,
+            downloadCount: document.querySelectorAll("#downloadArea a").length
+        }));
+        throw new Error(`No ${extension.toUpperCase()} download link. State: ${JSON.stringify(state)}. Errors: ${errors.join(" | ")}. Original: ${error.message}`);
+    }
     const result = await link.evaluate(anchor => ({ href: anchor.href, download: anchor.download }));
     if (!result.href.startsWith("blob:")) throw new Error(`${extension.toUpperCase()} conversion did not create a blob download`);
     if (result.download !== `smoke-test.${extension}`) throw new Error(`Unexpected ${extension.toUpperCase()} filename: ${result.download}`);
