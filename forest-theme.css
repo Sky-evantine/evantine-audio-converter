@@ -1,0 +1,78 @@
+/* Evantine Forest Green Theme — September 2026 */
+:root{
+  --forest-950:#08150d;
+  --forest-900:#0b2115;
+  --forest-800:#12331f;
+  --forest-700:#1c4a2b;
+  --forest-600:#2d6340;
+  --moss:#718b5d;
+  --sage:#aebda1;
+  --cream:#f4f1e8;
+  --line:rgba(174,189,161,.22);
+  --muted:#aeb8a8;
+  --ink:#edf1e9;
+  --paper:#0b2115;
+  --soft:#173a24;
+}
+html,body{background:var(--forest-950);color:var(--ink)}
+body{background:var(--forest-950)}
+body:before{background:#0b2115}
+body:after{background:linear-gradient(180deg,rgba(4,14,8,.22),rgba(4,18,10,.48) 52%,rgba(3,12,7,.72))}
+.announcement{background:rgba(5,18,10,.86);color:#dfe8d9;border-color:var(--line)}
+.site-header{background:rgba(8,28,16,.78);color:var(--ink);border-bottom-color:var(--line)}
+.site-nav a,.bag-button,.menu-toggle,.wordmark{color:var(--ink)}
+.site-header .wordmark:before{filter:brightness(0) invert(1)}
+.hero,.shop,.story,.portfolio-section,.about-hero,.journal-hero{
+  background:rgba(9,34,20,.70);
+  color:var(--ink);
+  border-color:var(--line);
+}
+.hero h1,.section-head h2,.story h2,.portfolio-grid h2,.journal-hero h1,.about-hero h1{color:#f2f4ed}
+.hero-text,.story-copy,.shop-intro,.journal-intro{color:#d4ddd0}
+.eyebrow,.section-head>p,.shop-toolbar>p,.product-meta,.story-note{color:#aeb8a8}
+.button{border-color:#dfe8d9}
+.button-dark{background:#dfe8d9;color:#0a2114}
+.button-dark:hover{background:#fff;color:#082014}
+.hero-photo{background:#12331f;border-color:var(--line)}
+.hero-photo:after{background:linear-gradient(180deg,rgba(3,16,8,.02),rgba(3,16,8,.30))}
+.shop-toolbar,.section-head,.about-grid,.detail-lines,.portfolio-label{border-color:var(--line)}
+.filter{color:#dce6d7}.filter.active{border-color:#dce6d7}
+.product-image{background:linear-gradient(135deg,#163b25,#244b2d)!important;border-color:rgba(190,211,177,.16)}
+.product-card:nth-child(2) .product-image{background:#193f27!important}
+.product-card:nth-child(3) .product-image{background:#214b2d!important}
+.product-card:nth-child(4) .product-image{background:#163821!important}
+.product-link:hover .product-image{background:#2b5737!important}
+.product-image:before{border-color:rgba(215,231,207,.28)}
+.garment{background:#a7b89a;box-shadow:18px 20px 0 rgba(0,0,0,.22)}
+.product-02 .garment{background:#91a985}.product-03 .garment{background:#7f9b73}.product-04 .garment{background:#b2c09f}
+.product-name,.product-type,.product-no,.product-index,.product-view,.card-add{color:#e7eee2}
+.card-add{opacity:.8}
+.editorial-strip{background:rgba(23,57,35,.82);color:#eef3eb}
+.editorial-copy>p:last-child{color:#b8c6b3}
+.editorial-strip figure{border-left-color:var(--line)}
+.manifesto{background:rgba(4,18,10,.91);color:#edf2e9}
+.manifesto>p:last-child{color:#aeb8a8}
+.story{border-bottom-color:var(--line)}
+.text-link{color:#e3ebde}
+.site-footer{background:rgba(7,25,14,.82);color:#cdd8c8;border-top-color:var(--line)}
+.bag-panel,.product-modal{background:#0d2818;color:#edf2e9}
+.bag-head,.bag-foot{border-color:var(--line)}
+.empty-bag,.modal-meta{color:#aeb8a8}
+.bag-item{border-bottom-color:var(--line)}
+.bag-thumb,.modal-art,.detail-art{background:#163a24}
+.modal-art:after,.detail-art:before{border-color:rgba(211,229,202,.22)}
+.collection-stage{background:#06170d;color:#edf2e9}
+.collection-stage:before{border-color:rgba(215,231,207,.15)}
+.journal-art{background:#173b24;color:#edf2e9}
+.journal-art:before,.journal-art:after{border-color:rgba(215,231,207,.2)}
+.journal-art-02{background:#06170d}.journal-art-03{background:#24462d}
+.journal-end{background:#173b24;color:#edf2e9}
+.hero-art{background:#06170d}
+.toast{background:#dfe8d9;color:#092114}
+.overlay{background:rgba(0,0,0,.58)}
+::selection{background:#b7c9aa;color:#07170d}
+:focus-visible{outline-color:#dcebd5}
+@media(max-width:800px){
+  .site-nav{background:#0d2818;color:#edf2e9;border-bottom-color:var(--line)}
+  .site-nav a,.site-nav .bag-button{color:#edf2e9}
+}

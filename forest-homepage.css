@@ -1,0 +1,338 @@
+
+
+/* Cinematic Forest Homepage — final direction */
+body.home-page{
+  background:#06150c;
+  min-height:100vh;
+}
+body.home-page:before{
+  background:url("https://cdn.shopify.com/s/files/1/0810/8507/1396/files/evantine-forest-field.png?v=1789782480") center center/cover no-repeat;
+  filter:saturate(.9) contrast(1.02) brightness(.72);
+  transform:none;
+}
+body.home-page:after{
+  background:
+    linear-gradient(180deg,rgba(3,12,7,.58) 0%,rgba(3,14,8,.10) 25%,rgba(3,14,8,.24) 58%,rgba(3,12,7,.86) 100%);
+}
+body.home-page .announcement{
+  position:absolute;top:0;left:0;right:0;
+  z-index:40;background:rgba(4,17,9,.28);
+  color:rgba(239,244,235,.72);
+  border-bottom:1px solid rgba(220,235,212,.13);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+}
+body.home-page .site-header{
+  position:absolute;top:28px;left:0;right:0;
+  z-index:35;height:76px;
+  background:rgba(5,22,12,.20);
+  border-bottom:1px solid rgba(220,235,212,.16);
+  color:#f1f4ed;
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+}
+body.home-page .site-header .wordmark,
+body.home-page .site-header .site-nav a,
+body.home-page .site-header .bag-button,
+body.home-page .site-header .menu-toggle{color:#f1f4ed}
+body.home-page .site-header .wordmark:before{filter:brightness(0) invert(1)}
+body.home-page main{position:relative;z-index:2}
+body.home-page .hero{
+  min-height:100svh;
+  padding:clamp(150px,20vh,220px) var(--pad) clamp(110px,14vh,170px);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;isolation:isolate;
+  background:transparent;
+  color:#f3f5ef;
+  text-align:center;
+  overflow:hidden;
+}
+body.home-page .hero:before{
+  content:"";position:absolute;inset:0;z-index:-1;
+  background:linear-gradient(180deg,rgba(5,23,12,.10),rgba(5,23,12,.12) 42%,rgba(5,23,12,.52));
+  pointer-events:none;
+}
+body.home-page .hero-copy{
+  max-width:850px;width:100%;display:flex;flex-direction:column;align-items:center;
+  position:relative;z-index:3;
+  text-shadow:0 2px 24px rgba(0,0,0,.28);
+}
+body.home-page .hero-copy .eyebrow{
+  max-width:500px;margin:0 0 28px;
+  color:rgba(229,238,223,.78);font-size:9px;letter-spacing:.30em;
+}
+body.home-page .hero h1{
+  color:#f5f6f1;font-size:clamp(70px,13vw,190px);
+  line-height:.82;letter-spacing:.10em;font-weight:400;
+  margin:0 0 24px;
+}
+body.home-page .hero h1 em{font-family:var(--serif)}
+body.home-page .hero-text{
+  color:rgba(236,242,231,.82);font-family:Georgia,serif;font-style:italic;
+  font-size:clamp(20px,2.4vw,32px);letter-spacing:.08em;
+  margin:0 0 38px;max-width:none;
+}
+body.home-page .hero .button{
+  border:1px solid rgba(229,239,220,.75);
+  background:rgba(4,18,9,.14);color:#f1f4ed;
+  border-radius:999px;padding:17px 34px;
+  letter-spacing:.24em;font-size:9px;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+}
+body.home-page .hero .button:hover{background:rgba(231,240,224,.92);color:#092113}
+body.home-page .hero-art{display:none}
+body.home-page .shop,
+body.home-page .story,
+body.home-page .portfolio-section{
+  background:rgba(7,29,16,.76);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+}
+body.home-page .editorial-strip{background:rgba(17,49,29,.72)}
+body.home-page .manifesto{background:rgba(3,16,9,.88)}
+body.home-page .site-footer{background:rgba(4,19,10,.84)}
+@media(max-width:800px){
+  body.home-page .site-header{top:24px;height:64px}
+  body.home-page .hero{min-height:100svh;padding:150px 24px 90px}
+  body.home-page .hero-copy .eyebrow{font-size:7px;letter-spacing:.22em;margin-bottom:26px}
+  body.home-page .hero h1{font-size:clamp(56px,17vw,94px);letter-spacing:.08em}
+  body.home-page .hero-text{font-size:21px;margin-bottom:32px}
+  body.home-page .hero .button{padding:15px 28px}
+}
+@media(prefers-reduced-motion:reduce){
+  body.home-page:before{background-attachment:scroll}
+}
+
+
+/* Exact landing-page composition from approved Evantine reference */
+@media(min-width:801px){
+  body.home-page .announcement{display:none}
+}
+body.home-page .announcement{display:none}
+body.home-page .site-header{
+  top:0;
+  height:88px;
+  background:rgba(5,18,10,.18);
+  border-bottom:1px solid rgba(230,240,222,.16);
+}
+body.home-page .hero{
+  min-height:100svh;
+  height:100svh;
+  padding:0 var(--pad);
+  background:
+    linear-gradient(180deg,rgba(5,18,10,.08) 0%,rgba(5,18,10,.04) 38%,rgba(3,12,7,.48) 100%),
+    url("https://cdn.shopify.com/s/files/1/0810/8507/1396/files/evantine-forest-field.png?v=1789782480") center/cover no-repeat;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+body.home-page .hero:before{display:none}
+body.home-page .hero-copy{
+  transform:translateY(7%);
+}
+body.home-page .hero-copy .eyebrow{
+  margin-bottom:34px;
+  font-size:clamp(7px,.72vw,10px);
+  letter-spacing:.36em;
+  color:rgba(232,240,226,.78);
+}
+body.home-page .hero h1{
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:clamp(76px,10vw,154px);
+  font-weight:400;
+  letter-spacing:.075em;
+  line-height:.9;
+  margin:0 0 24px;
+  text-shadow:0 3px 25px rgba(0,0,0,.28);
+}
+body.home-page .hero-text{
+  font-family:Georgia,"Times New Roman",serif;
+  font-style:italic;
+  font-size:clamp(19px,2vw,30px);
+  letter-spacing:.08em;
+  color:rgba(238,243,233,.80);
+  margin:0 0 42px;
+}
+body.home-page .hero .button{
+  min-width:238px;
+  padding:18px 34px;
+  border-radius:999px;
+  background:rgba(5,20,11,.08);
+  border:1px solid rgba(224,237,215,.76);
+  color:#eef3e9;
+  font-size:9px;
+  letter-spacing:.28em;
+}
+body.home-page .hero .button span{font-size:14px;letter-spacing:0}
+body.home-page .hero .button:hover{
+  transform:translateY(-2px);
+  background:rgba(231,240,224,.88);
+  color:#092113;
+}
+@media(max-width:800px){
+  body.home-page .site-header{
+    top:0;
+    height:88px;
+    padding:0 38px;
+    background:rgba(5,18,10,.16);
+  }
+  body.home-page .hero{
+    min-height:100svh;
+    height:100svh;
+    padding:88px 26px 45px;
+    background-position:center center;
+  }
+  body.home-page .hero-copy{transform:translateY(8%)}
+  body.home-page .hero-copy .eyebrow{
+    margin-bottom:30px;
+    font-size:7px;
+    letter-spacing:.31em;
+    line-height:1.8;
+    max-width:390px;
+  }
+  body.home-page .hero h1{
+    font-size:clamp(57px,13.7vw,98px);
+    letter-spacing:.065em;
+    margin-bottom:22px;
+  }
+  body.home-page .hero-text{
+    font-size:21px;
+    letter-spacing:.055em;
+    margin-bottom:39px;
+  }
+  body.home-page .hero .button{
+    min-width:242px;
+    padding:17px 30px;
+  }
+}
+
+
+/* Smooth cinematic section-to-section scrolling */
+@media (prefers-reduced-motion:no-preference){
+  html{scroll-behavior:smooth;scroll-snap-type:y proximity}
+  body.home-page main>section,
+  body.home-page>footer{
+    scroll-snap-align:start;
+    scroll-snap-stop:normal;
+  }
+  body.home-page main>section:not(.hero){
+    transition:opacity .75s ease,transform .85s cubic-bezier(.2,.7,.2,1);
+  }
+  body.home-page main>section.section-enter{
+    opacity:.42;
+    transform:translateY(18px);
+  }
+  body.home-page main>section.section-active{
+    opacity:1;
+    transform:none;
+  }
+  body.home-page .hero{
+    transition:opacity .9s ease,transform 1s cubic-bezier(.2,.7,.2,1);
+  }
+  body.home-page .hero .hero-copy{
+    transition:opacity .8s ease,transform 1s cubic-bezier(.2,.7,.2,1);
+  }
+  body.home-page .hero:not(.section-active) .hero-copy{
+    opacity:.82;
+    transform:translateY(10%);
+  }
+}
+@media (max-width:800px) and (prefers-reduced-motion:no-preference){
+  html{scroll-snap-type:y proximity}
+  body.home-page main>section{
+    scroll-margin-top:0;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-snap-type:none}
+}
+
+
+/* Premium scroll motion — smooth, restrained, cinematic */
+@media (prefers-reduced-motion:no-preference){
+  html{
+    scroll-behavior:smooth;
+    scroll-snap-type:none;
+  }
+  body.home-page{
+    overscroll-behavior-y:none;
+  }
+  body.home-page main>section,
+  body.home-page>footer{
+    scroll-margin-top:0;
+    will-change:opacity,transform;
+  }
+
+  /* Sections breathe in rather than snapping */
+  body.home-page main>section:not(.hero),
+  body.home-page>footer{
+    opacity:1;
+    transform:none;
+    transition:
+      opacity 900ms cubic-bezier(.22,1,.36,1),
+      transform 1100ms cubic-bezier(.22,1,.36,1);
+  }
+  body.home-page main>section.section-enter{
+    opacity:.72;
+    transform:translate3d(0,28px,0);
+  }
+
+  /* Hero has a slow editorial parallax */
+  body.home-page .hero{
+    overflow:hidden;
+    transform:translate3d(0,0,0);
+  }
+  body.home-page .hero:after{
+    content:"";
+    position:absolute;
+    inset:-8%;
+    z-index:-1;
+    background:inherit;
+    transform:translate3d(0,var(--hero-shift,0px),0) scale(1.04);
+    will-change:transform;
+    pointer-events:none;
+  }
+  body.home-page .hero-copy{
+    will-change:transform,opacity;
+    transition:transform 900ms cubic-bezier(.22,1,.36,1),opacity 700ms ease;
+  }
+
+  /* Existing editorial elements get staggered entrances */
+  body.home-page .product-card,
+  body.home-page .editorial-copy,
+  body.home-page .story-copy,
+  body.home-page .manifesto blockquote,
+  body.home-page .manifesto>p:last-child{
+    will-change:transform,opacity;
+  }
+  body.home-page .product-card{
+    transition:
+      opacity 700ms cubic-bezier(.22,1,.36,1),
+      transform 800ms cubic-bezier(.22,1,.36,1);
+  }
+  body.home-page .product-card.reveal-on-scroll:not(.is-visible){
+    opacity:0;
+    transform:translate3d(0,34px,0);
+  }
+  body.home-page .product-card.reveal-on-scroll.is-visible{
+    opacity:1;
+    transform:translate3d(0,0,0);
+  }
+  body.home-page .product-image{
+    transition:transform 900ms cubic-bezier(.22,1,.36,1),background .5s ease;
+  }
+
+  /* Manifesto gets a slower, deeper reveal */
+  body.home-page .manifesto.reveal-on-scroll:not(.is-visible){
+    opacity:.2;
+    transform:translate3d(0,40px,0);
+  }
+  body.home-page .manifesto.reveal-on-scroll.is-visible{
+    opacity:1;
+    transform:none;
+  }
+
+  /* Mobile: no aggressive parallax */
+  @media(max-width:800px){
+    body.home-page .hero:after{inset:-3%;transform:scale(1.025)}
+    body.home-page .hero-copy{transition-duration:800ms}
+    body.home-page main>section.section-enter{transform:translate3d(0,18px,0)}
+  }
+}

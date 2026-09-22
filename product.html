@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta id="metaDescription" name="description" content="Evantine Apparel Collection 001 product detail."><meta name="theme-color" content="#f3f1eb">
+<link rel="canonical" id="canonicalUrl" href="https://evantineapparel.com/product.html"><link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="product"><meta property="og:site_name" content="Evantine Apparel"><meta property="og:title" id="ogTitle" content="Evantine Apparel — Collection 001"><meta property="og:description" id="ogDescription" content="Evantine Apparel Collection 001 product detail."><meta property="og:url" id="ogUrl" content="https://evantine-apparel-8livf8gpr-dyezansmencer-8434.vercel.app/product.html">
+<link rel="stylesheet" href="style.css"><title>Evantine Product — Collection 001</title>
+</head>
+<body><a class="skip-link" href="#main">Skip to content</a><div class="announcement">EVANTINE APPAREL / COLLECTION 001 <span>NEW YORK — WORLDWIDE</span></div>
+<header class="site-header"><a class="wordmark" href="/" aria-label="Evantine Apparel home">EVANTINE</a><button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav">Menu</button><nav id="site-nav" class="site-nav" aria-label="Primary"><a href="shop.html">Shop</a><a href="collections.html">Collections</a><a href="journal.html">Journal</a><a href="about.html">Story</a><button class="bag-button" type="button" aria-controls="bagPanel" aria-expanded="false">Bag <span id="bagCount">0</span></button></nav></header>
+<main id="main"><section class="product-detail section"><div class="detail-art" id="detailArt"><img class="detail-brand-mark" src="brand-mark.svg" alt="" aria-hidden="true"><span id="detailNo"></span><span class="garment" aria-hidden="true"></span></div><div class="detail-copy"><p class="eyebrow" id="detailCategory"></p><h1 id="detailTitle">Collection 001</h1><p id="detailMeta" class="detail-price"></p><p id="detailDescription"></p><div class="detail-lines"><div><span>Designed</span><strong>New York</strong></div><div><span>Collection</span><strong>001 / 2026</strong></div><div><span>Status</span><strong>Collection 001</strong></div></div><button id="detailAdd" class="button button-dark" type="button">Add to bag</button><a class="back-link" href="shop.html">← Back to collection</a></div></section></main>
+<footer class="site-footer"><span>© 2026 EVANTINE</span><span>NEW YORK / WORLDWIDE</span></footer>
+<aside id="bagPanel" class="bag-panel" aria-hidden="true" aria-labelledby="bagTitle"><div class="bag-head"><div><p class="eyebrow">YOUR SELECTION</p><h2 id="bagTitle">Bag</h2></div><button id="bagClose" class="close-button" type="button" aria-label="Close shopping bag">×</button></div><div id="bagItems" class="bag-items"></div><div class="bag-foot"><div><span>Subtotal</span><strong id="bagTotal">$0</strong></div><button class="button button-dark checkout-button" type="button">Checkout</button></div></aside>
+<div id="overlay" class="overlay" hidden></div><div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script src="script.js"></script><script>
+window.evProductReady.then(()=>{
+const params=new URLSearchParams(location.search),id=params.get("id"),handle=params.get("handle");
+const previews={
+"motion-shell-002":{no:"01",name:"MOTION SHELL 002",type:"apparel",meta:"Technical nylon · Design preview",desc:"A lightweight outer layer built around movement, weather, and city-to-outdoor transitions.",collection:"002 / 2026"},
+"city-track-pant-002":{no:"02",name:"CITY TRACK PANT 002",type:"apparel",meta:"Relaxed woven · Design preview",desc:"A relaxed utility silhouette designed for long days, quick movement, and easy layering.",collection:"002 / 2026"},
+"board-day-bag-002":{no:"03",name:"BOARD DAY BAG 002",type:"objects",meta:"Utility canvas · Design preview",desc:"A compact carry piece for boards, cameras, notebooks, and the things that follow you outside.",collection:"002 / 2026"},
+"motion-cap-002":{no:"04",name:"MOTION CAP 002",type:"objects",meta:"Structured cotton · Design preview",desc:"A clean six-panel form with an everyday profile and Evantine attitude.",collection:"002 / 2026"},
+"ev-motion-graphic-tee-002":{no:"05",name:"EV / MOTION GRAPHIC TEE 002",type:"apparel",meta:"Heavyweight cotton · Design preview",desc:"A graphic-led essential exploring the visual language of movement.",collection:"002 / 2026"},
+"street-layer-002":{no:"06",name:"STREET LAYER 002",type:"apparel",meta:"Midweight jersey · Design preview",desc:"A versatile midweight layer designed for the space between indoors and out.",collection:"002 / 2026"},
+"afterlight-knit-003":{no:"01",name:"AFTERLIGHT KNIT 003",type:"apparel",meta:"Soft knit · Design preview",desc:"A soft evening layer built around texture, warmth, and the last light of the day.",collection:"003 / 2026"},
+"night-shift-jacket-003":{no:"02",name:"NIGHT SHIFT JACKET 003",type:"apparel",meta:"Brushed twill · Design preview",desc:"A structured jacket for late walks, studio hours, and the city after dark.",collection:"003 / 2026"},
+"reflective-tote-003":{no:"03",name:"REFLECTIVE TOTE 003",type:"objects",meta:"Heavy canvas · Design preview",desc:"A durable carry-all with reflective detail for the hours after daylight.",collection:"003 / 2026"},
+"late-hour-scarf-003":{no:"04",name:"LATE HOUR SCARF 003",type:"objects",meta:"Woven cotton · Design preview",desc:"A tactile woven accessory for colder air and slower nights.",collection:"003 / 2026"},
+"afterlight-graphic-tee-003":{no:"05",name:"AFTERLIGHT GRAPHIC TEE 003",type:"apparel",meta:"Heavyweight cotton · Design preview",desc:"A statement tee carrying the visual language of the Afterlight chapter.",collection:"003 / 2026"},
+"studio-object-003":{no:"06",name:"STUDIO OBJECT 003",type:"objects",meta:"Mixed material · Design preview",desc:"A small experimental object from the Evantine studio.",collection:"003 / 2026"}
+};
+let product=handle?previews[handle]:null;
+if(!product) product=products.find(p=>(handle&&p.slug===handle)||(id&&p.no===id))||products[0];
+const isPreview=!!(product&&previews[handle]);
+if(!product)return;
+document.title=product.name+" — Evantine Apparel";
+const canonical="https://evantineapparel.com/product.html?handle="+encodeURIComponent(handle||product.slug||product.no);
+document.querySelector("#canonicalUrl").href=canonical;document.querySelector("#ogUrl").content=canonical;
+document.querySelector("#metaDescription").content=product.description+" Evantine Apparel.";
+document.querySelector("#ogTitle").content=product.name+" — Evantine Apparel";document.querySelector("#ogDescription").content=product.description;
+document.querySelector("#detailTitle").textContent=product.name;document.querySelector("#detailMeta").textContent=product.meta;
+document.querySelector("#detailCategory").textContent=product.type+" / "+(product.collectionName||product.collection||"Evantine");
+document.querySelector("#detailDescription").textContent=product.description;
+document.querySelector("#detailNo").textContent=product.no;document.querySelector("#detailArt").classList.add("product-"+product.no);if(product.image){const image=document.createElement("img");image.className="detail-photo";image.src=product.image;image.alt=product.name+" design preview";image.loading="eager";document.querySelector("#detailArt").prepend(image);}
+document.querySelector("#detailArt .garment").style.setProperty("--tilt",product.tilt||"0deg");
+const lines=document.querySelector(".detail-lines");
+if(lines){lines.querySelectorAll("div")[1].querySelector("strong").textContent=product.collection||"001 / 2026";lines.querySelectorAll("div")[2].querySelector("strong").textContent=isPreview?"Design preview":"Collection 001";}
+const add=document.querySelector("#detailAdd");
+if(isPreview){add.disabled=true;add.textContent="Design Preview — Not for Sale";add.setAttribute("aria-disabled","true");}
+else add.addEventListener("click",()=>addToBag(product));
+document.querySelector(".back-link").href=isPreview?"collection.html?handle="+encodeURIComponent((handle||"").includes("-003")?"collection-003":"collection-002"):"shop.html";
+});
+</script>
+</body></html>

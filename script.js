@@ -1,284 +1,72 @@
-const fileInput = document.getElementById("fileInput");
-const fileName = document.getElementById("fileName");
-const format = document.getElementById("format");
-const convertButton = document.getElementById("convertButton");
-const status = document.getElementById("status");
-const progressBar = document.getElementById("progressBar");
-const downloadArea = document.getElementById("downloadArea");
-
-let selectedFile = null;
-let downloadUrl = null;
-let mp3EncoderPromise = null;
-let converting = false;
-
-const MP3_BITRATE = 192;
-const ENCODE_BLOCK_SIZE = 131072;
-const YIELD_EVERY_BLOCKS = 16;
-const MAX_FILE_SIZE = 250 * 1024 * 1024;
-
-function setStatus(message) {
-  status.textContent = message;
+const SHOPIFY_STORE="https://1bmwgi-pw.myshopify.com";
+const COLLECTION_IMAGES={
+  "001":"https://cdn.shopify.com/s/files/1/0810/8507/1396/collections/evantine-collection-001-editorial.png?v=1789917110",
+  "002":"https://cdn.shopify.com/s/files/1/0810/8507/1396/collections/evantine-collection-002.png?v=1789917116",
+  "003":"https://cdn.shopify.com/s/files/1/0810/8507/1396/collections/evantine-collection-003.png?v=1789917122"
+};
+const LOCAL_PRODUCTS=[
+{name:"EVANTINE TEE 001",meta:"Heavyweight cotton · $48",price:48,no:"01",type:"apparel",slug:"evantine-tee-001",description:"A substantial everyday tee designed as the starting point for Collection 001.",tilt:"7deg",image:COLLECTION_IMAGES["001"]},
+{name:"STUDIO HOODIE 001",meta:"Brushed fleece · $96",price:96,no:"02",type:"apparel",slug:"studio-hoodie-001",description:"A soft, structured layer for cold walks, late nights, and everywhere between.",tilt:"-8deg",image:COLLECTION_IMAGES["001"]},
+{name:"EVERYDAY CAP 001",meta:"Cotton twill · $38",price:38,no:"03",type:"objects",slug:"everyday-cap-001",description:"An understated everyday cap with an easy silhouette and studio attitude.",tilt:"12deg",image:COLLECTION_IMAGES["001"]},
+{name:"EVANTINE TOTE 001",meta:"Heavy canvas · $42",price:42,no:"04",type:"objects",slug:"evantine-tote-001",description:"A durable carry-all for the things that follow you through the day.",tilt:"-6deg",image:COLLECTION_IMAGES["001"]}];
+let products=[...LOCAL_PRODUCTS];
+const $=s=>document.querySelector(s),grid=$("#productGrid"),resultCount=$("#resultCount"),bagCount=$("#bagCount"),toast=$("#toast"),menu=$(".menu-toggle"),nav=$("#site-nav"),bagPanel=$("#bagPanel"),bagItems=$("#bagItems"),bagTotal=$("#bagTotal"),bagButton=$(".bag-button"),bagClose=$("#bagClose"),overlay=$("#overlay"),modal=$("#productModal"),modalClose=$("#modalClose"),modalAdd=$("#modalAdd");
+let bag=[];try{bag=JSON.parse(localStorage.getItem("evantineBag")||"[]");if(!Array.isArray(bag))bag=[];}catch{bag=[]}
+let selected=null;
+const money=n=>"$"+Number(n||0).toFixed(2).replace(".00","");
+const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]||c));
+function collectionNo(p){const match=((p.tags||[]).join(" ")+" "+(p.title||"")+" "+(p.body_html||"")).match(/(?:Collection\s*)?(001|002|003)/i);return match?match[1]:"001";}
+function typeFor(p){return /cap|tote|bag|object|accessor|poster|tag|scarf|beanie/i.test((p.product_type||"")+" "+(p.title||""))?"objects":"apparel";}
+function renderProducts(filter="all"){
+  if(!grid)return;
+  const visible=products.filter(p=>filter==="all"||p.type===filter);
+  if(resultCount){resultCount.textContent=visible.length+" piece"+(visible.length===1?"":"s");resultCount.setAttribute("aria-label",visible.length+" pieces shown");}
+  grid.innerHTML=visible.map(p=>{
+    const image=p.image||COLLECTION_IMAGES[collectionNo(p)]||COLLECTION_IMAGES["001"];
+    return '<article class="product-card" data-id="'+esc(p.no)+'"><a class="product-link" href="product.html?handle='+encodeURIComponent(p.slug||"")+'" aria-label="View '+esc(p.name)+'"><span class="product-image product-'+esc(p.no)+'">'+
+      '<span class="product-no">'+esc(p.no)+'</span><span class="product-type">'+esc(p.type)+'</span><span class="product-index">EV / '+esc(collectionNo(p))+'</span>'+
+      '<img class="product-photo" src="'+esc(image)+'" alt="'+esc(p.name)+' design preview" loading="lazy"><span class="product-view">View piece ↗</span></span>'+
+      '<span class="product-name">'+esc(p.name)+'</span><span class="product-meta">'+esc(p.meta)+'</span></a>'+
+      '<button class="card-add" type="button" data-add="'+esc(p.no)+'" aria-label="Add '+esc(p.name)+' to bag">Add to bag</button></article>';
+  }).join("");
 }
-
-function setProgress(value) {
-  progressBar.style.width = `${Math.max(0, Math.min(100, Math.round(value * 100)))}%`;
+function updateBag(){
+  if(!bagCount||!bagItems||!bagTotal)return;
+  bagCount.textContent=bag.reduce((sum,item)=>sum+item.qty,0);
+  const total=bag.reduce((sum,item)=>sum+item.price*item.qty,0);bagTotal.textContent=money(total);
+  bagItems.innerHTML=bag.length?bag.map(item=>{
+    const image=item.image||COLLECTION_IMAGES[collectionNo(item)]||COLLECTION_IMAGES["001"];
+    return '<div class="bag-item"><span class="bag-thumb"><img src="'+esc(image)+'" alt="" loading="lazy"></span><div><h3>'+esc(item.name)+'</h3><p>'+item.qty+" × "+money(item.price)+'</p></div><button class="remove-item" type="button" data-remove="'+esc(item.no)+'" aria-label="Remove '+esc(item.name)+' from bag">Remove</button></div>';
+  }).join(""):'<p class="empty-bag">Your bag is empty. Start with Collections.</p>';
+  localStorage.setItem("evantineBag",JSON.stringify(bag));
 }
-
-function baseName(name) {
-  return name.replace(/\.[^/.]+$/, "");
-}
-
-function inputExtension(file) {
-  return file?.name.split(".").pop()?.toLowerCase() || "";
-}
-
-function revokeDownload() {
-  if (downloadUrl) URL.revokeObjectURL(downloadUrl);
-  downloadUrl = null;
-}
-
-function makeDownload(blob, extension) {
-  revokeDownload();
-  downloadUrl = URL.createObjectURL(blob);
-
-  const link = document.createElement("a");
-  link.href = downloadUrl;
-  link.download = `${baseName(selectedFile.name)}.${extension}`;
-  link.className = "download-button";
-  link.textContent = `Download ${extension.toUpperCase()}`;
-  downloadArea.replaceChildren(link);
-}
-
-function loadScript(src) {
-  return new Promise((resolve, reject) => {
-    const existing = document.querySelector(`script[src="${src}"]`);
-    if (existing) {
-      existing.addEventListener("load", resolve, { once: true });
-      existing.addEventListener("error", () => reject(new Error("MP3 engine could not load.")), { once: true });
-      if (window.WasmMediaEncoder) resolve();
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.src = src;
-    script.onload = resolve;
-    script.onerror = () => reject(new Error("MP3 engine could not load."));
-    document.head.appendChild(script);
-  });
-}
-
-async function getMp3Encoder() {
-  if (!mp3EncoderPromise) {
-    mp3EncoderPromise = (async () => {
-      if (!window.WasmMediaEncoder) {
-        await loadScript("https://unpkg.com/wasm-media-encoders@0.7.0/dist/umd/WasmMediaEncoder.min.js");
-      }
-      if (!window.WasmMediaEncoder?.createMp3Encoder) {
-        throw new Error("MP3 engine is unavailable.");
-      }
-      return window.WasmMediaEncoder.createMp3Encoder();
-    })().catch(error => {
-      mp3EncoderPromise = null;
-      throw error;
-    });
-  }
-
-  return mp3EncoderPromise;
-}
-
-function yieldToBrowser() {
-  return new Promise(resolve => setTimeout(resolve, 0));
-}
-
-async function decodeAudio(file) {
-  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-  if (!AudioContextClass) throw new Error("This browser cannot decode audio files.");
-
-  setStatus("Decoding audio...");
-  setProgress(0.04);
-
-  const context = new AudioContextClass();
-  try {
-    const data = await file.arrayBuffer();
-    return await context.decodeAudioData(data);
-  } finally {
-    await context.close().catch(() => {});
-  }
-}
-
-async function audioBufferToWav(buffer) {
-  const channels = Math.min(2, buffer.numberOfChannels);
-  const frames = buffer.length;
-  const dataSize = frames * channels * 2;
-  const output = new ArrayBuffer(44 + dataSize);
-  const view = new DataView(output);
-
-  const writeText = (offset, text) => {
-    for (let i = 0; i < text.length; i++) view.setUint8(offset + i, text.charCodeAt(i));
-  };
-
-  writeText(0, "RIFF");
-  view.setUint32(4, 36 + dataSize, true);
-  writeText(8, "WAVE");
-  writeText(12, "fmt ");
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true);
-  view.setUint16(22, channels, true);
-  view.setUint32(24, buffer.sampleRate, true);
-  view.setUint32(28, buffer.sampleRate * channels * 2, true);
-  view.setUint16(32, channels * 2, true);
-  view.setUint16(34, 16, true);
-  writeText(36, "data");
-  view.setUint32(40, dataSize, true);
-
-  const channelData = Array.from({ length: channels }, (_, i) => buffer.getChannelData(i));
-  const pcm = new Int16Array(output, 44);
-  const chunkFrames = 524288;
-
-  for (let start = 0; start < frames; start += chunkFrames) {
-    const end = Math.min(start + chunkFrames, frames);
-    let out = (start * channels);
-
-    for (let frame = start; frame < end; frame++) {
-      for (let channel = 0; channel < channels; channel++) {
-        const sample = Math.max(-1, Math.min(1, channelData[channel][frame]));
-        pcm[out++] = sample < 0 ? sample * 32768 : sample * 32767;
-      }
-    }
-
-    const progress = end / frames;
-    setProgress(0.05 + progress * 0.9);
-    setStatus(`Building WAV... ${Math.round(progress * 100)}%`);
-
-    if (end < frames) await yieldToBrowser();
-  }
-
-  return new Blob([output], { type: "audio/wav" });
-}
-
-async function convertToMp3(buffer) {
-  setStatus("Starting MP3 encoder...");
-  setProgress(0.05);
-
-  const encoder = await getMp3Encoder();
-  const channels = Math.min(2, buffer.numberOfChannels);
-  const data = Array.from({ length: channels }, (_, i) => buffer.getChannelData(i));
-
-  encoder.configure({
-    sampleRate: buffer.sampleRate,
-    channels,
-    bitrate: MP3_BITRATE
-  });
-
-  const chunks = [];
-
-  for (let offset = 0, block = 0; offset < buffer.length; offset += ENCODE_BLOCK_SIZE, block++) {
-    const end = Math.min(offset + ENCODE_BLOCK_SIZE, buffer.length);
-    const samples = data.map(channel => channel.subarray(offset, end));
-    const encoded = encoder.encode(samples);
-
-    if (encoded.length) chunks.push(new Uint8Array(encoded));
-
-    const progress = end / buffer.length;
-    setProgress(0.05 + progress * 0.9);
-    setStatus(`Converting to MP3... ${Math.round(progress * 100)}%`);
-
-    if (block % YIELD_EVERY_BLOCKS === 0 && end < buffer.length) {
-      await yieldToBrowser();
-    }
-  }
-
-  const finalChunk = encoder.finalize();
-  if (finalChunk.length) chunks.push(new Uint8Array(finalChunk));
-
-  return new Blob(chunks, { type: "audio/mpeg" });
-}
-
-fileInput.addEventListener("change", () => {
-  const file = fileInput.files?.[0] || null;
-
-  if (file && file.size > MAX_FILE_SIZE) {
-    selectedFile = null;
-    fileInput.value = "";
-    revokeDownload();
-    downloadArea.replaceChildren();
-    convertButton.disabled = true;
-    setProgress(0);
-    fileName.textContent = "File is too large (250 MB max).";
-    setStatus("Choose a smaller MP3 or WAV file.");
-    return;
-  }
-
-  selectedFile = file;
-  revokeDownload();
-  downloadArea.replaceChildren();
-  setProgress(0);
-  convertButton.disabled = !selectedFile;
-  fileName.textContent = selectedFile ? `Selected: ${selectedFile.name}` : "No file selected";
-
-  if (!selectedFile) {
-    setStatus("Choose an audio file to begin.");
-    return;
-  }
-
-  const inputFormat = inputExtension(selectedFile);
-
-  if (!["mp3", "wav"].includes(inputFormat)) {
-    selectedFile = null;
-    convertButton.disabled = true;
-    setStatus("Please choose an MP3 or WAV file.");
-    return;
-  }
-
-  format.value = inputFormat === "mp3" ? "wav" : "mp3";
-  setStatus(`Ready. ${format.value.toUpperCase()} is selected.`);
-});
-
-convertButton.addEventListener("click", async () => {
-  if (!selectedFile || converting) return;
-
-  converting = true;
-  convertButton.disabled = true;
-  downloadArea.replaceChildren();
-  setProgress(0);
-  status.classList.remove("status-done");
-
-  try {
-    const outputFormat = format.value;
-    const inputFormat = inputExtension(selectedFile);
-
-    if (inputFormat === outputFormat) {
-      setStatus("Preparing download...");
-      const blob = new Blob([await selectedFile.arrayBuffer()], {
-        type: outputFormat === "mp3" ? "audio/mpeg" : "audio/wav"
+function showToast(message){if(!toast)return;toast.textContent=message;toast.classList.add("show");clearTimeout(window.toastTimer);window.toastTimer=setTimeout(()=>toast.classList.remove("show"),2200);}
+function closeOverlays(){if(bagPanel){bagPanel.classList.remove("open");bagPanel.setAttribute("aria-hidden","true");}if(bagButton)bagButton.setAttribute("aria-expanded","false");if(modal)modal.hidden=true;if(overlay)overlay.hidden=true;document.body.style.overflow="";if(bagButton)bagButton.focus();}
+function openBag(){if(!bagPanel||!overlay)return;bagPanel.classList.add("open");bagPanel.setAttribute("aria-hidden","false");if(bagButton)bagButton.setAttribute("aria-expanded","true");overlay.hidden=false;document.body.style.overflow="hidden";if(bagClose)bagClose.focus();}
+function addToBag(product){const existing=bag.find(item=>item.no===product.no&&item.shopifyId===product.shopifyId);if(existing)existing.qty++;else bag.push({...product,qty:1});updateBag();showToast(product.name+" added to bag");}
+async function loadShopifyProducts(){
+  try{
+    const response=await fetch(SHOPIFY_STORE+"/products.json?limit=250",{headers:{Accept:"application/json"}});
+    if(!response.ok)throw new Error("Shopify products unavailable");
+    const data=await response.json();
+    if(Array.isArray(data.products)&&data.products.length){
+      products=data.products.map((p,i)=>{
+        const v=p.variants?.[0]||{}, collection=collectionNo(p), image=p.images?.[0]?.src||COLLECTION_IMAGES[collection]||COLLECTION_IMAGES["001"];
+        return {name:p.title,meta:(p.product_type||"Apparel")+" · "+money(v.price),price:Number(v.price||0),no:String(i+1).padStart(2,"0"),type:typeFor(p),slug:p.handle,description:(p.body_html||"").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim()||"Evantine Apparel piece.",tilt:"0deg",shopifyId:p.id,variantId:v.id,image,tags:p.tags||[],collectionName:"Collection "+collection,collection:"0"+collection+" / 2026"};
       });
-      makeDownload(blob, outputFormat);
-      setProgress(1);
-      setStatus(`Already ${outputFormat.toUpperCase()}. Ready to download.`);
-      status.classList.add("status-done");
-      return;
     }
-
-    if (outputFormat === "mp3") {
-      setStatus("Loading MP3 engine...");
-      await getMp3Encoder();
-    }
-
-    const buffer = await decodeAudio(selectedFile);
-    const blob = outputFormat === "wav"
-      ? await audioBufferToWav(buffer)
-      : await convertToMp3(buffer);
-
-    makeDownload(blob, outputFormat);
-    setProgress(1);
-    setStatus(`Done. Your ${outputFormat.toUpperCase()} is ready.`);
-    status.classList.add("status-done");
-  } catch (error) {
-    console.error("Evantine conversion error:", error);
-    setProgress(0);
-    setStatus(`Conversion failed: ${error instanceof Error ? error.message : String(error)}`);
-  } finally {
-    converting = false;
-    convertButton.disabled = !selectedFile;
-  }
-});
+  }catch(error){console.warn("Shopify integration fallback:",error);}
+  renderProducts();updateBag();window.dispatchEvent(new CustomEvent("evantine:products-ready"));
+}
+window.evProductReady=loadShopifyProducts();
+function setActiveNav(){const path=location.pathname.split("/").pop()||"index.html";document.querySelectorAll(".site-nav a").forEach(a=>{const href=a.getAttribute("href")||"",target=href.split("#")[0].split("/").pop();if(target===path)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current");});}
+setActiveNav();
+document.querySelectorAll(".filter").forEach(button=>button.addEventListener("click",()=>{document.querySelectorAll(".filter").forEach(b=>{b.classList.remove("active");b.setAttribute("aria-pressed","false")});button.classList.add("active");button.setAttribute("aria-pressed","true");renderProducts(button.dataset.filter);}));
+if(grid)grid.addEventListener("click",e=>{const add=e.target.closest("[data-add]");if(add){e.preventDefault();const product=products.find(p=>p.no===add.dataset.add);if(product)addToBag(product);}});
+if(modalAdd)modalAdd.addEventListener("click",()=>{if(selected){addToBag(selected);closeOverlays();}});
+if(bagItems)bagItems.addEventListener("click",e=>{const remove=e.target.closest("[data-remove]");if(!remove)return;bag=bag.filter(item=>item.no!==remove.dataset.remove);updateBag();});
+document.querySelectorAll(".checkout-button").forEach(button=>button.addEventListener("click",()=>{if(!bag.length){showToast("Your bag is empty");return;}const lines=bag.filter(item=>item.variantId).map(item=>item.variantId+":"+item.qty);if(lines.length){location.href=SHOPIFY_STORE+"/cart/"+lines.join(",");return;}location.href=SHOPIFY_STORE+"/collections/all";}));
+if(bagButton)bagButton.addEventListener("click",openBag);if(bagClose)bagClose.addEventListener("click",closeOverlays);if(modalClose)modalClose.addEventListener("click",closeOverlays);if(overlay)overlay.addEventListener("click",closeOverlays);
+if(menu)menu.addEventListener("click",()=>{const open=menu.getAttribute("aria-expanded")==="true";menu.setAttribute("aria-expanded",String(!open));if(nav)nav.classList.toggle("open",!open);});
+if(nav)nav.querySelectorAll("a").forEach(a=>a.addEventListener("click",()=>{if(menu)menu.setAttribute("aria-expanded","false");nav.classList.remove("open");}));
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeOverlays();});
